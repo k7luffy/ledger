@@ -1,0 +1,31 @@
+.transactionsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.transactionsHeader h3 {
+  margin: 0;
+}
+
+.addButton {
+  background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%);
+  color: #4c1d95;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 4px -1px rgba(165, 180, 252, 0.3);
+}
+
+.addButton:hover {
+  background: linear-gradient(135deg, #93c5fd 0%, #a78bfa 100%);
+  box-shadow: 0 4px 6px -1px rgba(165, 180, 252, 0.4);
+}

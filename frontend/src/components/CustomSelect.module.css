@@ -1,0 +1,105 @@
+.customSelect {
+  position: relative;
+  width: 100%;
+}
+
+.selectTrigger {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: #fafbfc;
+  color: #1e293b;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 1.5rem;
+}
+
+.selectTrigger:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.selectTrigger:focus,
+.selectTrigger.open {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.selectedValue {
+  flex: 1;
+  text-align: left;
+}
+
+.chevron {
+  color: #6b7280;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.option {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.option:last-child {
+  border-bottom: none;
+}
+
+.option:hover {
+  background: #f8fafc;
+  color: #1f2937;
+}
+
+.option.selected {
+  background: #f1f5f9;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.option.selected:hover {
+  background: #e2e8f0;
+  color: #5a67d8;
+}

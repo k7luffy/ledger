@@ -1,0 +1,32 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.statCard {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.statCard h3 {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.statCard p {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.income {
+  color: #10b981;
+}
+
+.expense {
+  color: #ef4444;
+}
