@@ -1,38 +1,52 @@
 import { useState, useEffect } from "react";
 import { createTransaction, DEFAULT_CATEGORIES } from "../data/types";
+import { transactionAPI } from "../services/api";
 
 // Custom hook for managing transactions
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [categories] = useState(DEFAULT_CATEGORIES);
 
-  // Load data from localStorage on mount
+  // Load data from API on mount
   useEffect(() => {
-    const savedData = localStorage.getItem("ledger-transactions");
-    if (savedData) {
+    const loadTransactions = async () => {
       try {
-        const data = JSON.parse(savedData);
+        const data = await transactionAPI.getAll();
         setTransactions(data);
       } catch (error) {
-        console.error("Failed to load saved data:", error);
+        console.error("Failed to load transactions from API:", error);
+        setTransactions([]);
       }
-    }
+    };
+
+    loadTransactions();
   }, []);
 
-  // Save data to localStorage whenever transactions change
-  useEffect(() => {
-    localStorage.setItem("ledger-transactions", JSON.stringify(transactions));
-  }, [transactions]);
-
   // Add a new transaction
-  const addTransaction = (transactionData) => {
-    const newTransaction = createTransaction(transactionData);
-    setTransactions((prev) => [...prev, newTransaction]);
+  const addTransaction = async (transactionData) => {
+    try {
+      const newTransaction = createTransaction(transactionData);
+      console.log(newTransaction);
+      const createdTransaction = await transactionAPI.create(newTransaction);
+      setTransactions((prev) => [...prev, createdTransaction]);
+    } catch (error) {
+      console.error("Failed to create transaction:", error);
+      // Fallback to local state if API fails
+      const newTransaction = createTransaction(transactionData);
+      setTransactions((prev) => [...prev, newTransaction]);
+    }
   };
 
   // Delete a transaction
-  const deleteTransaction = (transactionId) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== transactionId));
+  const deleteTransaction = async (transactionId) => {
+    try {
+      await transactionAPI.delete(transactionId);
+      setTransactions((prev) => prev.filter((t) => t.id !== transactionId));
+    } catch (error) {
+      console.error("Failed to delete transaction:", error);
+      // Fallback to local state if API fails
+      setTransactions((prev) => prev.filter((t) => t.id !== transactionId));
+    }
   };
 
   // Calculate statistics

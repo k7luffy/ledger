@@ -162,6 +162,22 @@
   -moz-appearance: textfield;
 }
 
+/* Date input styling */
+.input[type="date"] {
+  cursor: pointer;
+  color-scheme: light;
+}
+
+.input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .input:focus {
   outline: none;
   border-color: #667eea;

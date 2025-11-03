@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTransactions } from "../hooks/useTransactions";
 import StatsCards from "../components/StatsCards";
-import TransactionList from "../components/TransactionList";
+import MonthlyTransactionList from "../components/MonthlyTransactionList";
 import AddTransactionForm from "../components/AddTransactionForm";
 import styles from "./Dashboard.module.css";
 import TransactionHeader from "../components/TransactionHeader";
@@ -11,8 +11,8 @@ const Dashboard = () => {
   const stats = getStatistics();
   const [showForm, setShowForm] = useState(false);
 
-  const handleAddTransaction = (transactionData) => {
-    addTransaction(transactionData);
+  const handleAddTransaction = async (transactionData) => {
+    await addTransaction(transactionData);
   };
 
   return (
@@ -22,7 +22,8 @@ const Dashboard = () => {
 
       <div className={styles.transactionsSection}>
         <TransactionHeader setShowForm={setShowForm} />
-        <TransactionList transactions={transactions} />
+
+        <MonthlyTransactionList transactions={transactions} />
       </div>
 
       <AddTransactionForm

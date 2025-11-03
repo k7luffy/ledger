@@ -1,0 +1,6 @@
+{
+  "/api/transactions": "/transactions",
+  "/api/categories": "/categories",
+  "/api/transactions/:id": "/transactions/:id",
+  "/api/categories/:id": "/categories/:id"
+}

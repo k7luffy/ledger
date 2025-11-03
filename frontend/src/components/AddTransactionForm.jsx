@@ -8,6 +8,7 @@ const AddTransactionForm = ({ isOpen, onClose, onAddTransaction }) => {
     amount: "",
     category: "Food", // Default to first option
     description: "",
+    date: new Date().toISOString().split("T")[0], // Default to today
   });
 
   const typeOptions = [
@@ -60,12 +61,14 @@ const AddTransactionForm = ({ isOpen, onClose, onAddTransaction }) => {
       onAddTransaction({
         ...formData,
         amount: parseFloat(formData.amount),
+        date: new Date(formData.date).toISOString(), // Convert to ISO string
       });
       setFormData({
         type: "expense",
         amount: "",
         category: "Food", // Also select first item when resetting
         description: "",
+        date: new Date().toISOString().split("T")[0], // Reset to today
       });
       onClose();
     }
@@ -123,16 +126,30 @@ const AddTransactionForm = ({ isOpen, onClose, onAddTransaction }) => {
             </div>
           </div>
 
-          <div className={styles.formGroup}>
-            <label>Description (Optional)</label>
-            <input
-              type="text"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Enter description"
-              className={styles.input}
-            />
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Date</label>
+              <input
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleInputChange}
+                className={styles.input}
+                required
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Description (Optional)</label>
+              <input
+                type="text"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Enter description"
+                className={styles.input}
+              />
+            </div>
           </div>
 
           <div className={styles.formActions}>
