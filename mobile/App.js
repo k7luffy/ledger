@@ -2,11 +2,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StyleSheet } from "react-native";
 
-import TransactionsScreen from "./screens/TransactionsScreen";
-import AddScreen from "./screens/AddScreen";
-import SettingsScreen from "./screens/SettingsScreen";
-import HomeScreen from "./screens/HomeScreen";
+import TransactionsScreen from "./src/screens/TransactionsScreen";
+import AddScreen from "./src/screens/AddScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
+import HomeScreen from "./src/screens/HomeScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Provider } from "react-redux";
+import { store } from "./src/store";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,30 +19,36 @@ const Stack = createNativeStackNavigator();
 /* --------------------- Root Navigator --------------------- */
 export default function App() {
   return (
-    <GestureHandlerRootView>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Home"
-          screenOptions={{ headerTitleAlign: "center" }}
-        >
-          {/* Home shows the custom bottom bar */}
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            // options={{ headerShown: false }}
-          />
+    <Provider store={store}>
+      <GestureHandlerRootView>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Home"
+            screenOptions={{ headerTitleAlign: "center" }}
+          >
+            {/* Home shows the custom bottom bar */}
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              // options={{ headerShown: false }}
+            />
 
-          {/* Child pages have default back button, no bottom bar */}
-          <Stack.Screen
-            name="Transactions"
-            component={TransactionsScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="Add" component={AddScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </GestureHandlerRootView>
+            {/* Child pages have default back button, no bottom bar */}
+            <Stack.Screen
+              name="Transactions"
+              component={TransactionsScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Add"
+              component={AddScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </GestureHandlerRootView>
+    </Provider>
   );
 }
 

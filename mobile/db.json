@@ -1,0 +1,56 @@
+{
+  "records": [
+    {
+      "id": 1,
+      "type": "expense",
+      "amount": 28.5,
+      "categoryParent": "食品酒水",
+      "categoryChild": "早午晚餐",
+      "account": "现金 (CNY)",
+      "note": "咖喱饭",
+      "dateISO": "2025-11-04T08:30:00.000Z"
+    }
+  ],
+  "categories": [
+    {
+      "parent": "食品饮料",
+      "children": [
+        { "name": "超市购物", "icon": "" },
+        { "name": "外食", "icon": "" },
+        { "name": "奶茶", "icon": "" }
+      ]
+    },
+    {
+      "parent": "行车交通",
+      "children": [
+        { "name": "私家车费用", "icon": "" },
+        { "name": "公共交通", "icon": "" }
+      ]
+    },
+    {
+      "parent": "居家物业",
+      "children": [
+        { "name": "房租物业", "icon": "" },
+        { "name": "水电煤气", "icon": "" },
+        { "name": "维修清洁", "icon": "" }
+      ]
+    }
+  ],
+  "posts": [
+    {
+      "id": 1,
+      "title": "json-server",
+      "author": "typicode"
+    }
+  ],
+  "comments": [
+    {
+      "id": 1,
+      "body": "some comment",
+      "postId": 1
+    }
+  ],
+  "profile": {
+    "name": "typicode"
+  }
+}
