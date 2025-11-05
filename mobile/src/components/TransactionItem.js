@@ -1,17 +1,28 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSelector } from "react-redux";
+import { selectCategoryById } from "../store/categoriesSlice";
+import { useNavigation } from "@react-navigation/native";
 
 function TransactionItem({ item }) {
+  const navigation = useNavigation();
+
+  const childCategory = useSelector((state) =>
+    selectCategoryById(state, item.categoryChildId)
+  );
   return (
-    <View style={styles.item}>
+    <Pressable
+      style={styles.item}
+      onPress={() => navigation.navigate("Add", { screenType: "edit" })}
+    >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <MaterialCommunityIcons
-          name="food-fork-drink"
+          name={childCategory.icon}
           size={29}
           color="#bbc2b3ff"
         />
         <View style={{ paddingLeft: 12 }}>
-          <Text style={styles.category}>{item.categoryChild}</Text>
+          <Text style={styles.category}>{childCategory.label}</Text>
           <Text style={{ fontSize: 11, marginTop: 5, color: "#797a79ff" }}>
             现金 . Fred . 00:47
           </Text>
@@ -27,7 +38,7 @@ function TransactionItem({ item }) {
           {item.amount.toFixed(2)}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

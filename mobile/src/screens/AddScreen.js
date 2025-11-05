@@ -11,59 +11,31 @@ import {
   Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addTransaction } from "../store/transactionsSlice";
 import { StackActions } from "@react-navigation/native";
+import {
+  resetCategories,
+  selectAllCategories,
+  selectCategoryById,
+} from "../store/categoriesSlice";
 
 const TYPES = ["expense", "income"];
 
-// 图标+颜色按截图风格（可继续补充/改名）
-const CATEGORY_SECTIONS = [
-  {
-    title: "最近使用",
-    key: "recent",
-    items: [
-      { label: "早午晚餐", icon: "silverware-fork-knife", tint: "#FFE8E8" },
-    ],
-  },
-  {
-    title: "食品酒水",
-    key: "food",
-    items: [
-      { label: "早午晚餐", icon: "silverware-fork-knife", tint: "#FFE8E8" },
-      { label: "烟酒茶", icon: "glass-cocktail", tint: "#FFF3D7" },
-      { label: "水果零食", icon: "ice-cream", tint: "#E7F6FF" },
-    ],
-  },
-  {
-    title: "行车交通",
-    key: "transport",
-    items: [
-      { label: "公共交通", icon: "bus", tint: "#E9F4FF" },
-      { label: "打车租车", icon: "car", tint: "#FFF0E1" },
-      { label: "私家车费用", icon: "car-cog", tint: "#EEE9FF" },
-    ],
-  },
-  {
-    title: "居家物业",
-    key: "home",
-    items: [
-      { label: "水电煤气", icon: "water", tint: "#EAFBF2" },
-      { label: "房租物业", icon: "home-city-outline", tint: "#FFF1F1" },
-      { label: "维修清洁", icon: "toolbox-outline", tint: "#F3F6FF" },
-    ],
-  },
-];
-
-export default function AddScreen({ navigation }) {
+export default function AddScreen({ navigation, route }) {
+  const { screenType } = route.params || {};
   const insets = useSafeAreaInsets();
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("0");
+  const [showPad, setShowPad] = useState(screenType === "edit" ? false : true);
 
   const [category, setCategory] = useState({
     parent: "食品酒水",
-    child: "早午晚餐",
+    childId: 1,
   });
+  const childCategory = useSelector((state) =>
+    selectCategoryById(state, category.childId)
+  );
   const [account, setAccount] = useState("现金 (CNY)");
   const [dateLabel, setDateLabel] = useState(getTodayLabel());
   const [note, setNote] = useState("");
@@ -71,6 +43,8 @@ export default function AddScreen({ navigation }) {
   const [recentItems, setRecentItems] = useState(["早午晚餐"]); // 最近使用展示用
 
   const dispatch = useDispatch();
+  const categories = useSelector(selectAllCategories);
+  // dispatch(resetCategories());
 
   const signColor = useMemo(
     () => (type === "income" ? "#FF6B6B" : "#34C759"),
@@ -81,26 +55,25 @@ export default function AddScreen({ navigation }) {
     setAmount((prev) => inputLogic(prev, k));
   };
 
-  const onConfirm = () => {
-    // 在这里提交
-    // 你可以把 amount 转成 number，并带上 type/category/account/date/note
-    navigation.goBack();
-  };
-
   const onConfirmAdd = () => {
+    if (Number(amount) === 0) {
+      return;
+    }
     const payload = {
       type,
       amount: Number(parseFloat(String(amount)).toFixed(2)),
       categoryParent: category.parent,
-      categoryChild: category.child,
+      categoryChildId: category.childId,
       account,
       note,
       dateISO: new Date().toISOString(),
     };
     dispatch(addTransaction(payload));
     // navigation.navigate("Transactions");
-    navigation.dispatch(StackActions.replace("Transactions"));
+    // navigation.dispatch(StackActions.replace("Transactions"));
+    navigation.goBack();
   };
+  // console.log(categories[0].items);
 
   const barHeight = 76 + insets.bottom;
   return (
@@ -111,7 +84,7 @@ export default function AddScreen({ navigation }) {
           <MaterialCommunityIcons name="chevron-left" size={26} />
         </Pressable>
         <Text style={styles.topTitle}>Home</Text>
-        <Pressable onPress={onConfirm} style={[styles.saveBtn]}>
+        <Pressable onPress={onConfirmAdd} style={[styles.saveBtn]}>
           <Text style={styles.saveText}>✓</Text>
         </Pressable>
       </View>
@@ -145,9 +118,12 @@ export default function AddScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.amountCard}>
-            <Text style={[styles.amountText, { color: signColor }]}>
-              {amount}
-            </Text>
+            <Pressable onPress={() => setShowPad((v) => !v)}>
+              <Text style={[styles.amountText, { color: signColor }]}>
+                {amount}
+              </Text>
+            </Pressable>
+
             <View style={styles.divider} />
           </View>
 
@@ -155,7 +131,7 @@ export default function AddScreen({ navigation }) {
           <FieldRow
             icon="view-grid-outline"
             label="分类"
-            value={`${category.parent}  >  ${category.child}`}
+            value={`${category.parent}  >  ${childCategory.label}`}
             onPress={() => setCategoryModalVisible(true)}
           />
           <FieldRow
@@ -186,22 +162,106 @@ export default function AddScreen({ navigation }) {
         </ScrollView>
 
         {/* 底部数字键盘 */}
-        <View style={[styles.padWrap, { paddingBottom: insets.bottom }]}>
-          <View style={styles.padLeft}>
-            <PadRow onKey={onKey} a="7" b="8" c="9" />
-            <PadRow onKey={onKey} a="4" b="5" c="6" />
-            <PadRow onKey={onKey} a="1" b="2" c="3" />
-            <PadRow onKey={onKey} a="." b="0" c="back" />
-          </View>
-
-          <View style={styles.padRight}>
-            <PadKey label="-" onPress={() => onKey("-")} />
-            <PadKey label="+" onPress={() => onKey("+")} />
-            <Pressable style={[styles.confirmBtn]} onPress={onConfirmAdd}>
-              <Text style={styles.confirmText}>确定</Text>
+        <View style={styles.amountCard}></View>
+        {showPad ? (
+          <View style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
+            {/* 收起/展开按钮 */}
+            <Pressable
+              onPress={() => setShowPad((v) => !v)}
+              style={styles.collapseBtn}
+            >
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={22}
+                color="#6B7280"
+              />
             </Pressable>
+            <View style={[styles.padWrap, { paddingBottom: insets.bottom }]}>
+              <View style={styles.padLeft}>
+                <PadRow onKey={onKey} a="7" b="8" c="9" />
+                <PadRow onKey={onKey} a="4" b="5" c="6" />
+                <PadRow onKey={onKey} a="1" b="2" c="3" />
+                <PadRow onKey={onKey} a="." b="0" c="back" />
+              </View>
+
+              <View style={styles.padRight}>
+                <PadKey label="-" onPress={() => onKey("-")} />
+                <PadKey label="+" onPress={() => onKey("+")} />
+                <Pressable
+                  style={[styles.confirmBtn]}
+                  onPress={() => setShowPad(false)}
+                >
+                  <Text style={styles.confirmText}>确定</Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View
+            style={[
+              styles.padWrap,
+              {
+                paddingBottom: insets.bottom,
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              },
+            ]}
+          >
+            {/* 两个主按钮 */}
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                gap: 15,
+                paddingBottom: 30,
+              }}
+            >
+              {screenType === "edit" ? (
+                <Pressable
+                  style={[
+                    styles.confirmBtnBottom,
+                    { backgroundColor: "#f9e9cfff", flex: 1 },
+                  ]}
+                  onPress={() => {
+                    // 再记一条：重置金额、备注，保持分类与类型（你可以按需重置）
+                    setAmount("0");
+                    setNote("");
+                    setShowPad(true); // 继续输入
+                  }}
+                >
+                  <Text style={[styles.confirmText, { color: "#efa21eff" }]}>
+                    再记一条
+                  </Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={[
+                    styles.confirmBtnBottom,
+                    { backgroundColor: "#f9d4cfff", flex: 1 },
+                  ]}
+                  onPress={() => {
+                    // 再记一条：重置金额、备注，保持分类与类型（你可以按需重置）
+                    setAmount("0");
+                    setNote("");
+                    setShowPad(true); // 继续输入
+                  }}
+                >
+                  <Text style={[styles.confirmText, { color: "#ef481eff" }]}>
+                    删除
+                  </Text>
+                </Pressable>
+              )}
+
+              <Pressable
+                style={[styles.confirmBtnBottom, { flex: 1 }]}
+                onPress={onConfirmAdd}
+              >
+                <Text style={styles.confirmText}>完成</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       <Modal
@@ -225,7 +285,7 @@ export default function AddScreen({ navigation }) {
             </View>
 
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-              {CATEGORY_SECTIONS.map((sec) => {
+              {categories.map((sec) => {
                 const items =
                   sec.key === "recent"
                     ? sec.items.filter((it) => recentItems.includes(it.label))
@@ -256,7 +316,7 @@ export default function AddScreen({ navigation }) {
                             )
                               parent = "居家物业";
 
-                            setCategory({ parent, child: it.label });
+                            setCategory({ parent, childId: it.id });
                             setRecentItems((prev) => {
                               const next = [
                                 it.label,
@@ -451,7 +511,7 @@ const styles = StyleSheet.create({
   chipText: { color: "#4B5563", fontSize: 12 },
 
   padWrap: {
-    position: "absolute",
+    position: "relative",
     left: 0,
     right: 0,
     bottom: 0,
@@ -538,4 +598,28 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   gridText: { fontSize: 12, color: "#222", maxWidth: 72, textAlign: "center" },
+  collapseBtn: {
+    position: "absolute",
+    top: -40, // ↑ 往上移一点（根据你的 padWrap 高度调整）
+    right: 12, // 紧贴右边
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 2, // Android 阴影
+    shadowColor: "#000", // iOS 阴影
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+  },
+  confirmBtnBottom: {
+    flex: 1,
+    backgroundColor: "#efa21eff",
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 50,
+  },
 });

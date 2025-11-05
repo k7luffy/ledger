@@ -98,12 +98,12 @@ export default function CollapsibleTransactionList({ transactions }) {
             <Text style={{ color: "#797a79ff" }}>结余</Text>
             <Text style={{ fontSize: 18, fontWeight: "600" }}>
               {" "}
-              {statisticsMonth[section.title].balance}
+              {statisticsMonth[section.title].balance.toFixed(2)}
             </Text>
           </View>
           <Text>
-            收入 {statisticsMonth[section.title].totalIncome} | 支出
-            {statisticsMonth[section.title].totalExpense}
+            收入 {statisticsMonth[section.title].totalIncome.toFixed(2)} | 支出
+            {statisticsMonth[section.title].totalExpense.toFixed(2)}
           </Text>
         </View>
       </TouchableOpacity>

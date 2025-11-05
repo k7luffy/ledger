@@ -25,7 +25,7 @@ const persistConfig = {
   key: "root",
   storage: AsyncStorage,
   version: 1,
-  whitelist: ["records"], // 只保存 records；想保存 accounts 就加 'accounts'
+  whitelist: ["transactions", "categories"], // 只保存 transactions；想保存 accounts 就加 'accounts'
   // migrate: async (state) => state, // 需要做数据迁移时再打开
 };
 

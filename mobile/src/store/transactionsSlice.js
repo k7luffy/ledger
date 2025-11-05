@@ -7,7 +7,7 @@ const initialState = {
       type: "expense",
       amount: 28.5,
       categoryParent: "食品酒水",
-      categoryChild: "早午晚餐",
+      categoryChildId: 1,
       account: "现金 (CNY)",
       note: "咖喱饭",
       dateISO: "2025-11-04T08:30:00.000Z",
@@ -26,20 +26,29 @@ const transactionsSlice = createSlice({
       reducer(state, action) {
         state.list.unshift(action.payload);
       },
-      updateTransaction(state, action) {
+    },
+    updateTransaction: {
+      reducer(state, action) {
         const idx = state.list.findIndex((t) => t.id === action.payload.id);
         if (idx !== -1)
           state.list[idx] = { ...state.list[idx], ...action.payload };
       },
-      removeTransaction(state, action) {
+    },
+    removeTransaction: {
+      reducer(state, action) {
         state.list = state.list.filter((t) => t !== action.payload);
       },
     },
+    resetTransactions: () => initialState,
   },
 });
 
-export const { addTransaction, updateTransaction, removeTransaction } =
-  transactionsSlice.actions;
+export const {
+  addTransaction,
+  updateTransaction,
+  removeTransaction,
+  resetTransactions,
+} = transactionsSlice.actions;
 export default transactionsSlice.reducer;
 
 // Selectors

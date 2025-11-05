@@ -9,11 +9,16 @@ import {
 import { Ionicons } from "@expo/vector-icons"; // 用于返回箭头图标
 import CollapsibleTransactionList from "../components/CollapsibleTranscationList";
 import { useTransactions } from "../hooks/useTransactions";
-import { useSelector } from "react-redux";
-import { selectAllRecords } from "../store/transactionsSlice";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  resetTransactions,
+  selectAllRecords,
+} from "../store/transactionsSlice";
 
 export default function TransactionsScreen({ navigation }) {
   const { getStatistics } = useTransactions();
+  const dispatch = useDispatch();
+  // dispatch(resetTransactions());
   const transactions = useSelector(selectAllRecords);
   const { totalIncome, totalExpense, balance } = getStatistics(transactions);
 
@@ -49,7 +54,7 @@ export default function TransactionsScreen({ navigation }) {
                   color: "#333",
                 }}
               >
-                {balance}
+                {balance.toFixed(2)}
               </Text>
             </View>
             <View style={{ justifyContent: "flex-end" }}>
@@ -59,7 +64,7 @@ export default function TransactionsScreen({ navigation }) {
           <Text
             style={{ marginTop: 10, fontWeight: "700", color: "#3e3d3dff" }}
           >
-            收入 {totalIncome} | 支出 {totalExpense}
+            收入 {totalIncome.toFixed(2)} | 支出 {totalExpense.toFixed(2)}
           </Text>
         </View>
         {/* 左侧返回 */}
