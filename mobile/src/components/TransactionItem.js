@@ -13,7 +13,9 @@ function TransactionItem({ item }) {
   return (
     <Pressable
       style={styles.item}
-      onPress={() => navigation.navigate("Add", { screenType: "edit" })}
+      onPress={() =>
+        navigation.navigate("Add", { screenType: "edit", transaction: item })
+      }
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <MaterialCommunityIcons

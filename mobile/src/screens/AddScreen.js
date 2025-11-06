@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Text,
   View,
@@ -12,34 +12,59 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
-import { addTransaction } from "../store/transactionsSlice";
+import {
+  addTransaction,
+  removeTransaction,
+  updateTransaction,
+} from "../store/transactionsSlice";
 import { StackActions } from "@react-navigation/native";
 import {
   resetCategories,
   selectAllCategories,
   selectCategoryById,
 } from "../store/categoriesSlice";
+import DatePickerModal from "../components/DatePickerModal";
+import { TextInput } from "react-native-gesture-handler";
 
 const TYPES = ["expense", "income"];
 
 export default function AddScreen({ navigation, route }) {
-  const { screenType } = route.params || {};
+  const inputRef = useRef(null);
+  const { screenType, transaction } = route.params || {};
   const insets = useSafeAreaInsets();
-  const [type, setType] = useState("expense");
-  const [amount, setAmount] = useState("0");
+  const [type, setType] = useState(
+    screenType === "edit" ? transaction.type : "expense"
+  );
+  const [amount, setAmount] = useState(
+    screenType === "edit" ? Number(transaction.amount).toFixed(2) : "0.00"
+  );
+  const amountOrigin = useRef({
+    partInt: "",
+    decimal: false,
+    partDec: "",
+  });
   const [showPad, setShowPad] = useState(screenType === "edit" ? false : true);
 
-  const [category, setCategory] = useState({
-    parent: "食品酒水",
-    childId: 1,
-  });
+  const [category, setCategory] = useState(
+    screenType === "edit"
+      ? {
+          parent: transaction.categoryParent,
+          childId: transaction.categoryChildId,
+        }
+      : {
+          parent: "食品酒水",
+          childId: 1,
+        }
+  );
   const childCategory = useSelector((state) =>
     selectCategoryById(state, category.childId)
   );
   const [account, setAccount] = useState("现金 (CNY)");
-  const [dateLabel, setDateLabel] = useState(getTodayLabel());
+  // const [dateLabel, setDateLabel] = useState(getTodayLabel());
   const [note, setNote] = useState("");
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [datePickerModalVisible, setDatePickerModalVisible] = useState(false);
+  const [date, setDate] = useState(new Date());
   const [recentItems, setRecentItems] = useState(["早午晚餐"]); // 最近使用展示用
 
   const dispatch = useDispatch();
@@ -52,7 +77,8 @@ export default function AddScreen({ navigation, route }) {
   );
 
   const onKey = (k) => {
-    setAmount((prev) => inputLogic(prev, k));
+    inputLogic(amountOrigin.current, k);
+    setAmount(() => processAmount(amountOrigin.current));
   };
 
   const onConfirmAdd = () => {
@@ -61,14 +87,17 @@ export default function AddScreen({ navigation, route }) {
     }
     const payload = {
       type,
-      amount: Number(parseFloat(String(amount)).toFixed(2)),
+      amount: Number(amount),
       categoryParent: category.parent,
       categoryChildId: category.childId,
       account,
       note,
-      dateISO: new Date().toISOString(),
+      dateISO: new Date(date).toISOString(),
     };
-    dispatch(addTransaction(payload));
+
+    screenType === "edit"
+      ? dispatch(updateTransaction({ id: transaction.id, ...payload }))
+      : dispatch(addTransaction(payload));
     // navigation.navigate("Transactions");
     // navigation.dispatch(StackActions.replace("Transactions"));
     navigation.goBack();
@@ -76,6 +105,7 @@ export default function AddScreen({ navigation, route }) {
   // console.log(categories[0].items);
 
   const barHeight = 76 + insets.bottom;
+  const dateLabel = getDateLabel(date);
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {/* 顶部栏 */}
@@ -118,7 +148,7 @@ export default function AddScreen({ navigation, route }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.amountCard}>
-            <Pressable onPress={() => setShowPad((v) => !v)}>
+            <Pressable onPress={() => setShowPad(true)}>
               <Text style={[styles.amountText, { color: signColor }]}>
                 {amount}
               </Text>
@@ -144,13 +174,25 @@ export default function AddScreen({ navigation, route }) {
             icon="clock-outline"
             label="时间"
             value={dateLabel}
-            onPress={() => {}}
+            onPress={() => {
+              setDatePickerModalVisible(true);
+              setShowPad(false);
+            }}
           />
+          {/* <Pressable onPress={() => inputRef.current?.focus()}>
+            <Text>Tap to open</Text>
+          </Pressable>
+          <TextInput ref={inputRef} /> */}
           <FieldRow
             icon="bookmark-outline"
             label="备注"
-            value={note || "…"}
-            onPress={() => {}}
+            value={note}
+            inputRef={inputRef}
+            onPress={() => {
+              setShowPad(false);
+              inputRef.current?.focus();
+            }}
+            setNote={setNote}
           />
           <View style={styles.tagsRow}>
             {["早餐", "商家", "项目"].map((t) => (
@@ -196,73 +238,77 @@ export default function AddScreen({ navigation, route }) {
               </View>
             </View>
           </View>
-        ) : (
-          <View
-            style={[
-              styles.padWrap,
-              {
-                paddingBottom: insets.bottom,
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-              },
-            ]}
-          >
-            {/* 两个主按钮 */}
-            <View
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                gap: 15,
-                paddingBottom: 30,
-              }}
-            >
-              {screenType === "edit" ? (
-                <Pressable
-                  style={[
-                    styles.confirmBtnBottom,
-                    { backgroundColor: "#f9e9cfff", flex: 1 },
-                  ]}
-                  onPress={() => {
-                    // 再记一条：重置金额、备注，保持分类与类型（你可以按需重置）
-                    setAmount("0");
-                    setNote("");
-                    setShowPad(true); // 继续输入
-                  }}
-                >
-                  <Text style={[styles.confirmText, { color: "#efa21eff" }]}>
-                    再记一条
-                  </Text>
-                </Pressable>
-              ) : (
-                <Pressable
-                  style={[
-                    styles.confirmBtnBottom,
-                    { backgroundColor: "#f9d4cfff", flex: 1 },
-                  ]}
-                  onPress={() => {
-                    // 再记一条：重置金额、备注，保持分类与类型（你可以按需重置）
-                    setAmount("0");
-                    setNote("");
-                    setShowPad(true); // 继续输入
-                  }}
-                >
-                  <Text style={[styles.confirmText, { color: "#ef481eff" }]}>
-                    删除
-                  </Text>
-                </Pressable>
-              )}
-
-              <Pressable
-                style={[styles.confirmBtnBottom, { flex: 1 }]}
-                onPress={onConfirmAdd}
-              >
-                <Text style={styles.confirmText}>完成</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
+        ) : null}
       </KeyboardAvoidingView>
+      {showPad ? null : (
+        <View
+          style={[
+            styles.padWrap,
+            {
+              paddingBottom: insets.bottom,
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+            },
+          ]}
+        >
+          {/* 两个主按钮 */}
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              gap: 15,
+              paddingBottom: 30,
+              // position: "absolute",
+              // left: 0,
+              // right: 0,
+              // bottom: 0,
+            }}
+          >
+            {screenType === "edit" ? (
+              <Pressable
+                style={[
+                  styles.confirmBtnBottom,
+                  { backgroundColor: "#f9d4cfff", flex: 1 },
+                ]}
+                onPress={() => {
+                  //
+                  dispatch(removeTransaction(transaction.id));
+                  navigation.goBack();
+                }}
+              >
+                <Text style={[styles.confirmText, { color: "#ef481eff" }]}>
+                  删除
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                style={[
+                  styles.confirmBtnBottom,
+                  { backgroundColor: "#f9e9cfff", flex: 1 },
+                ]}
+                onPress={() => {
+                  // 再记一条：重置金额、备注，保持分类与类型（你可以按需重置）
+                  setAmount("0");
+                  setNote("");
+                  setShowPad(true); // 继续输入
+                }}
+              >
+                <Text style={[styles.confirmText, { color: "#efa21eff" }]}>
+                  再记一条
+                </Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              style={[styles.confirmBtnBottom, { flex: 1 }]}
+              onPress={onConfirmAdd}
+            >
+              <Text style={styles.confirmText}>完成</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       <Modal
         visible={categoryModalVisible}
@@ -352,6 +398,17 @@ export default function AddScreen({ navigation, route }) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <DatePickerModal
+        visible={datePickerModalVisible}
+        value={date}
+        onConfirm={(d) => {
+          setDate(d);
+          setDatePickerModalVisible(false);
+        }}
+        onCancel={() => setDatePickerModalVisible(false)}
+        onBackdropPress={() => setDatePickerModalVisible(false)}
+      />
     </View>
   );
 }
@@ -383,19 +440,47 @@ function PadKey({ label, onPress }) {
   );
 }
 
-function FieldRow({ icon, label, value, onPress }) {
+function FieldRow({ icon, label, value, onPress, inputRef, setNote }) {
   return (
     <Pressable style={styles.fieldRow} onPress={onPress}>
       <View style={styles.fieldLeft}>
         <MaterialCommunityIcons name={icon} size={18} color="#6B7280" />
         <Text style={styles.fieldLabel}>{label}</Text>
       </View>
-      <Text style={styles.fieldValue} numberOfLines={1}>
-        {value}
-      </Text>
+      {label === "备注" ? (
+        <TextInput
+          style={styles.fieldValue}
+          ref={inputRef}
+          value={value}
+          placeholder="..."
+          placeholderTextColor="#111"
+          onChangeText={setNote}
+          caretHidden={true}
+        />
+      ) : (
+        <Text style={styles.fieldValue} numberOfLines={1}>
+          {value}
+        </Text>
+      )}
+
       <MaterialCommunityIcons name="chevron-right" size={20} color="#C7CBD1" />
     </Pressable>
   );
+}
+
+function getDateLabel(date) {
+  const today = new Date();
+  const m = date.getMonth() + 1;
+  const day = date.getDate();
+  const TodayStr =
+    today.getFullYear() === date.getFullYear() &&
+    today.getMonth() === date.getMonth() &&
+    today.getDate() === date.getDate()
+      ? "今天"
+      : "";
+  return `${TodayStr} ${m.toString().padStart(2, "0")}月${day
+    .toString()
+    .padStart(2, "0")}日`;
 }
 
 function getTodayLabel() {
@@ -407,36 +492,41 @@ function getTodayLabel() {
     .padStart(2, "0")}日`;
 }
 
-function inputLogic(prev, k) {
-  // 清理空开头
-  if (prev === "0") prev = "0";
+function processAmount(amountOrigin) {
+  // let partInt=
+  // if (amountOrigin.partInt === '') {
+  //   amountOrigin.part
+  // }
+  const partInt = amountOrigin.partInt === "" ? "0" : amountOrigin.partInt;
+  const partDec =
+    amountOrigin.partDec === ""
+      ? "00"
+      : amountOrigin.partDec.length === 1
+      ? amountOrigin.partDec + "0"
+      : amountOrigin.partDec;
+  return partInt + "." + partDec;
+}
 
+function inputLogic(amountOrigin, k) {
   if (/^\d$/.test(k)) {
     // 数字
-    if (prev === "0") return k; // 0 -> 5
-    return prev + k;
-  }
-  if (k === ".") {
-    if (prev.includes(".")) return prev;
-    return prev + ".";
-  }
-  if (k === "back") {
-    const next = prev.slice(0, -1);
-    return next.length ? next : "0";
-  }
-  if (k === "-" || k === "+") {
-    // 切换收支符号：仅改变首位是否带负号
-    if (k === "-") {
-      return prev.startsWith("-")
-        ? prev
-        : prev === "0"
-        ? "-0"
-        : "-" + prev.replace(/^-/, "");
-    } else {
-      return prev.replace(/^-/, "") || "0";
+
+    if (!amountOrigin.decimal) {
+      amountOrigin.partInt = amountOrigin.partInt + k;
+    } else if (amountOrigin.partDec.length < 2) {
+      amountOrigin.partDec = amountOrigin.partDec + k;
     }
   }
-  return prev;
+  if (k === ".") {
+    amountOrigin.decimal = true;
+  }
+  if (k === "back") {
+    if (!amountOrigin.decimal) {
+      amountOrigin.partInt = amountOrigin.partInt.slice(0, -1);
+    } else {
+      amountOrigin.partDec = amountOrigin.partDec.slice(0, -1);
+    }
+  }
 }
 
 const styles = StyleSheet.create({

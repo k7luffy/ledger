@@ -36,7 +36,7 @@ const transactionsSlice = createSlice({
     },
     removeTransaction: {
       reducer(state, action) {
-        state.list = state.list.filter((t) => t !== action.payload);
+        state.list = state.list.filter((t) => t.id !== action.payload);
       },
     },
     resetTransactions: () => initialState,
