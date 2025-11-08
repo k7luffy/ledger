@@ -61,7 +61,9 @@ export default function AddScreen({ navigation, route }) {
   );
   const [account, setAccount] = useState("现金 (CNY)");
   // const [dateLabel, setDateLabel] = useState(getTodayLabel());
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(
+    screenType === "edit" ? transaction.note : ""
+  );
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [datePickerModalVisible, setDatePickerModalVisible] = useState(false);
   const [date, setDate] = useState(new Date());
@@ -82,9 +84,6 @@ export default function AddScreen({ navigation, route }) {
   };
 
   const onConfirmAdd = () => {
-    if (Number(amount) === 0) {
-      return;
-    }
     const payload = {
       type,
       amount: Number(amount),
@@ -456,6 +455,7 @@ function FieldRow({ icon, label, value, onPress, inputRef, setNote }) {
           placeholderTextColor="#111"
           onChangeText={setNote}
           caretHidden={true}
+          returnKeyType="done"
         />
       ) : (
         <Text style={styles.fieldValue} numberOfLines={1}>
@@ -525,6 +525,9 @@ function inputLogic(amountOrigin, k) {
       amountOrigin.partInt = amountOrigin.partInt.slice(0, -1);
     } else {
       amountOrigin.partDec = amountOrigin.partDec.slice(0, -1);
+      if (amountOrigin.partDec === "") {
+        amountOrigin.decimal = false;
+      }
     }
   }
 }

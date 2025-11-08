@@ -9,6 +9,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider } from "react-redux";
 import { store } from "./src/store";
+import AccountsScreen from "./src/screens/AccountsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -30,7 +31,7 @@ export default function App() {
             <Stack.Screen
               name="Home"
               component={HomeScreen}
-              // options={{ headerShown: false }}
+              options={{ headerShown: false }}
             />
 
             {/* Child pages have default back button, no bottom bar */}
@@ -45,6 +46,7 @@ export default function App() {
               options={{ headerShown: false }}
             />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Accounts" component={AccountsScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </GestureHandlerRootView>
