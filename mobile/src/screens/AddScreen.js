@@ -193,13 +193,13 @@ export default function AddScreen({ navigation, route }) {
             }}
             setNote={setNote}
           />
-          <View style={styles.tagsRow}>
+          {/* <View style={styles.tagsRow}>
             {["早餐", "商家", "项目"].map((t) => (
               <Pressable key={t} style={styles.chip}>
                 <Text style={styles.chipText}>{t}</Text>
               </Pressable>
             ))}
-          </View>
+          </View> */}
         </ScrollView>
 
         {/* 底部数字键盘 */}
@@ -217,7 +217,7 @@ export default function AddScreen({ navigation, route }) {
                 color="#6B7280"
               />
             </Pressable>
-            <View style={[styles.padWrap, { paddingBottom: insets.bottom }]}>
+            <View style={[styles.padWrap]}>
               <View style={styles.padLeft}>
                 <PadRow onKey={onKey} a="7" b="8" c="9" />
                 <PadRow onKey={onKey} a="4" b="5" c="6" />
@@ -244,7 +244,6 @@ export default function AddScreen({ navigation, route }) {
           style={[
             styles.padWrap,
             {
-              paddingBottom: insets.bottom,
               alignItems: "center",
               justifyContent: "space-between",
               gap: 8,
@@ -257,7 +256,6 @@ export default function AddScreen({ navigation, route }) {
               flex: 1,
               flexDirection: "row",
               gap: 15,
-              paddingBottom: 30,
               // position: "absolute",
               // left: 0,
               // right: 0,
@@ -375,13 +373,13 @@ export default function AddScreen({ navigation, route }) {
                           <View
                             style={[
                               styles.iconWrap,
-                              { backgroundColor: it.tint },
+                              { backgroundColor: "#FFF7E3" },
                             ]}
                           >
                             <MaterialCommunityIcons
                               name={it.icon}
                               size={22}
-                              color="#111"
+                              color={it.tint}
                             />
                           </View>
                           <Text style={styles.gridText} numberOfLines={1}>
@@ -532,8 +530,19 @@ function inputLogic(amountOrigin, k) {
   }
 }
 
+const COLORS = {
+  bgOrange: "#FF9F45", // 顶部橙
+  cream: "#FFF5E6", // 页面奶油底
+  card: "#FFE7BD", // 卡片黄
+  border: "#F1D9B2",
+  brown: "#5B3A29", // 文字棕
+  softBrown: "#B38A6A",
+  tabBg: "#FFEDC9",
+  chip: "#F8D9A6",
+};
+
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#FFFFFF" },
+  page: { flex: 1, backgroundColor: "#FFF" },
 
   topBar: {
     height: 48,
@@ -541,7 +550,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EEE",
+    borderBottomColor: "#FFF",
   },
   iconBtn: { padding: 6, borderRadius: 10 },
   topTitle: { flex: 1, textAlign: "left", fontSize: 17, fontWeight: "600" },
@@ -560,11 +569,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: "#F4F6FA",
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  segItemActive: { backgroundColor: "#FFEED8" },
-  segText: { fontSize: 14, color: "#6B7280" },
-  segTextActive: { color: "#D97706", fontWeight: "700" },
+  segItemActive: { backgroundColor: "#FFD891" },
+  segText: { color: COLORS.softBrown },
+  segTextActive: { color: COLORS.brown, fontWeight: "700" },
 
   amountCard: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 10 },
   amountText: { fontSize: 44, fontWeight: "700" },
@@ -586,7 +596,13 @@ const styles = StyleSheet.create({
   },
   fieldLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   fieldLabel: { fontSize: 14, color: "#6B7280" },
-  fieldValue: { flex: 1, textAlign: "right", color: "#111", fontSize: 14 },
+  fieldValue: {
+    flex: 1,
+    textAlign: "right",
+    color: COLORS.softBrown,
+    fontWeight: "500",
+    fontSize: 14,
+  },
 
   tagsRow: {
     flexDirection: "row",
@@ -611,16 +627,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 12,
     gap: 8,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFF",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#EDEDED",
+    borderTopColor: COLORS.border,
   },
   padLeft: { flex: 1, gap: 8 },
   padRight: { width: 84, gap: 8, alignItems: "stretch" },
 
   key: {
     flex: 1,
-    backgroundColor: "#F7F8FA",
+    backgroundColor: COLORS.cream,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
@@ -649,7 +665,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: "70%",
-    backgroundColor: "#fff",
+    backgroundColor: "#FFF",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     overflow: "hidden",

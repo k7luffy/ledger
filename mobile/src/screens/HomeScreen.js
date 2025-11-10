@@ -80,53 +80,49 @@ export default function HomeScreen({ navigation }) {
             />
           </Pressable>
         </View>
-        <View style={{ height: 650, paddingHorizontal: 16 }}>
-          <ScrollView
-            contentContainerStyle={{ paddingBottom: 30 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* 余额卡片 */}
-            <View style={styles.card}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={styles.cardTitle}>账户结余</Text>
-                <MaterialCommunityIcons
-                  name="dots-horizontal"
-                  size={20}
-                  color="#C49D74"
-                />
-              </View>
-              <Text style={styles.cardMoney}>{currency(summary.balance)}</Text>
-              <View style={styles.cardRow}>
-                <Text style={styles.cardSub}>
-                  总收入：{currency(summary.totalIn)}
-                </Text>
-                <Text style={styles.cardSub}>
-                  总支出：{currency(summary.totalOut)}
-                </Text>
-              </View>
+        <View style={{ flex: 1, paddingHorizontal: 16 }}>
+          {/* 余额卡片 */}
+          <View style={styles.card}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <Text style={styles.cardTitle}>账户结余</Text>
+              <MaterialCommunityIcons
+                name="dots-horizontal"
+                size={20}
+                color="#C49D74"
+              />
             </View>
+            <Text style={styles.cardMoney}>{currency(summary.balance)}</Text>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardSub}>
+                总收入：{currency(summary.totalIn)}
+              </Text>
+              <Text style={styles.cardSub}>
+                总支出：{currency(summary.totalOut)}
+              </Text>
+            </View>
+          </View>
 
-            {/* 萌宠区域 */}
-            {/* <View style={styles.petWrap}>
+          {/* 萌宠区域 */}
+          {/* <View style={styles.petWrap}>
             <Image
               style={styles.pet}
               source={require("./../assets/bear.png")}
             />
           </View> */}
 
-            {/* 分段按钮 */}
-            <View style={styles.segmentRow}>
-              <Chip label="我的小屋" active />
-              <Chip label="熊熊社" />
-            </View>
+          {/* 分段按钮 */}
+          <View style={styles.segmentRow}>
+            <Chip label="我的小屋" active />
+            <Chip label="熊熊社" />
+          </View>
 
-            {/* 月份选择 */}
-            {/* <View style={styles.monthRow}>
+          {/* 月份选择 */}
+          {/* <View style={styles.monthRow}>
             <Pressable style={styles.monthBtn}>
               <Text style={styles.monthText}>{monthLabel}</Text>
               <MaterialCommunityIcons
@@ -139,6 +135,10 @@ export default function HomeScreen({ navigation }) {
               本月：<Text style={{ fontWeight: "700" }}>{currency(856)}</Text>
             </Text>
           </View> */}
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.recentRow}>
               <Text style={styles.monthText}>近期流水</Text>
               <Text style={styles.monthSum}>查看全部</Text>
@@ -160,10 +160,9 @@ export default function HomeScreen({ navigation }) {
             <ExpenseBreakdown data={EXPENSE_BREAKDOWN} />
           </ScrollView>
         </View>
-
-        {/* 底部导航 */}
       </View>
-      <View
+      {/* 底部导航 */}
+      {/* <View
         style={[
           styles.tabBar,
           {
@@ -184,17 +183,17 @@ export default function HomeScreen({ navigation }) {
             label="账单"
             active={tab === "bill"}
           />
-        </Pressable>
+        </Pressable> */}
 
-        {/* 中间“记一笔”圆钮 */}
-        {/* <Pressable
+      {/* 中间“记一笔”圆钮 */}
+      {/* <Pressable
             style={styles.centerAdd}
             onPress={() => console.log("Add record")}
           >
             <MaterialCommunityIcons name="plus" size={26} color="#FFF" />
           </Pressable> */}
 
-        <Pressable onPress={() => setTab("assets")}>
+      {/* <Pressable onPress={() => setTab("assets")}>
           <BottomTabItem
             icon={require("../assets/bottomIcon/add.png")}
             label="记一笔"
@@ -208,7 +207,7 @@ export default function HomeScreen({ navigation }) {
             active={tab === "me"}
           />
         </Pressable>
-      </View>
+      </View> */}
     </View>
   );
 }
@@ -269,7 +268,7 @@ function Chip({ label, active, onPress }) {
       onPress={onPress}
       style={[styles.chip, active ? styles.chipActive : styles.chipIdle]}
     >
-      <Text style={[styles.chipText, active && { color: "#5B3A29" }]}>
+      <Text style={[styles.chipText, active && { color: COLORS.brown }]}>
         {label}
       </Text>
     </Pressable>
@@ -480,6 +479,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 10,
+    marginBottom: 20,
   },
   chip: {
     flex: 1,

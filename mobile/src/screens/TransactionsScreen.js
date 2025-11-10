@@ -23,12 +23,9 @@ export default function TransactionsScreen({ navigation }) {
   const { totalIncome, totalExpense, balance } = getStatistics(transactions);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.cream }}>
       {/* 👇 自定义 Header */}
-      <ImageBackground
-        style={styles.header}
-        source={require("../assets/card.png")}
-      >
+      <View style={[styles.header, { backgroundColor: COLORS.card }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <TouchableOpacity
             style={styles.backButton}
@@ -51,34 +48,43 @@ export default function TransactionsScreen({ navigation }) {
                   fontSize: 30,
                   fontWeight: "600",
                   lineHeight: 30,
-                  color: "#333",
+                  color: COLORS.brown,
                 }}
               >
                 {balance.toFixed(2)}
               </Text>
             </View>
             <View style={{ justifyContent: "flex-end" }}>
-              <Text style={{ lineHeight: 26, fontWeight: "700" }}> 结余</Text>
+              <Text
+                style={{
+                  lineHeight: 26,
+                  fontWeight: "700",
+                  color: COLORS.brown,
+                }}
+              >
+                {" "}
+                结余
+              </Text>
             </View>
           </View>
           <Text
-            style={{ marginTop: 10, fontWeight: "700", color: "#3e3d3dff" }}
+            style={{ marginTop: 10, fontWeight: "700", color: COLORS.brown }}
           >
             收入 {totalIncome.toFixed(2)} | 支出 {totalExpense.toFixed(2)}
           </Text>
         </View>
         {/* 左侧返回 */}
-      </ImageBackground>
+      </View>
 
       {/* 👇 页面内容 */}
-      <View style={{ flex: 1, backgroundColor: "#F0F8E7" }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.card }}>
         <View
           style={{
             flex: 1,
-            borderRadius: 30,
-            backgroundColor: "#ffffff",
+            borderTopLeftRadius: 30,
+            borderTopRightRadius: 30,
+            backgroundColor: "#FFF",
             overflow: "hidden",
-            paddingBottom: 50,
           }}
         >
           <CollapsibleTransactionList transactions={transactions} />
@@ -103,6 +109,17 @@ export default function TransactionsScreen({ navigation }) {
   );
 }
 
+const COLORS = {
+  bgOrange: "#FF9F45", // 顶部橙
+  cream: "#FFF5E6", // 页面奶油底
+  card: "#FFE7BD", // 卡片黄
+  border: "#F1D9B2",
+  brown: "#5B3A29", // 文字棕
+  softBrown: "#B38A6A",
+  tabBg: "#FFEDC9",
+  chip: "#F8D9A6",
+};
+
 const styles = StyleSheet.create({
   header: {
     height: 200, // 👈 自定义高度
@@ -111,7 +128,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     // alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#EEF5EC",
+    // backgroundColor: "#EEF5EC",
     // position: "relative",
   },
   title: {

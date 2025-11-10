@@ -18,11 +18,18 @@ function TransactionItem({ item }) {
       }
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <MaterialCommunityIcons
+        {/* <MaterialCommunityIcons
           name={childCategory.icon}
           size={29}
-          color="#bbc2b3ff"
-        />
+          color={COLORS.softBrown}
+        /> */}
+        <View style={[styles.txnIconBox, { backgroundColor: "#FFF7E3" }]}>
+          <MaterialCommunityIcons
+            name={childCategory.icon}
+            size={22}
+            color={childCategory.tint}
+          />
+        </View>
         <View style={{ paddingLeft: 12 }}>
           <Text style={styles.category}>{childCategory.label}</Text>
           <Text style={{ fontSize: 11, marginTop: 5, color: "#797a79ff" }}>
@@ -46,6 +53,17 @@ function TransactionItem({ item }) {
 
 export default TransactionItem;
 
+const COLORS = {
+  bgOrange: "#FF9F45", // 顶部橙
+  cream: "#FFF5E6", // 页面奶油底
+  card: "#FFE7BD", // 卡片黄
+  border: "#F1D9B2",
+  brown: "#5B3A29", // 文字棕
+  softBrown: "#B38A6A",
+  tabBg: "#FFEDC9",
+  chip: "#F8D9A6",
+};
+
 const styles = StyleSheet.create({
   item: {
     flexDirection: "row",
@@ -56,6 +74,14 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     // borderRadius: 12,
   },
-  category: { fontSize: 17, fontWeight: "500", color: "#3d3c3cff" },
+  category: { fontSize: 17, fontWeight: "500", color: COLORS.brown },
   amount: { fontSize: 16, fontWeight: "500" },
+  txnIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
 });
