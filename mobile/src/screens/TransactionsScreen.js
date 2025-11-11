@@ -8,19 +8,19 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // 用于返回箭头图标
 import CollapsibleTransactionList from "../components/CollapsibleTranscationList";
-import { useTransactions } from "../hooks/useTransactions";
 import { useDispatch, useSelector } from "react-redux";
 import {
   resetTransactions,
   selectAllRecords,
 } from "../store/transactionsSlice";
+import { getTransactionStatistics } from "../utils/transactions";
 
 export default function TransactionsScreen({ navigation }) {
-  const { getStatistics } = useTransactions();
   const dispatch = useDispatch();
   // dispatch(resetTransactions());
   const transactions = useSelector(selectAllRecords);
-  const { totalIncome, totalExpense, balance } = getStatistics(transactions);
+  const { totalIncome, totalExpense, balance } =
+    getTransactionStatistics(transactions);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.cream }}>

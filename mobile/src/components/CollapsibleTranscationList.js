@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import TransactionItem from "./TransactionItem";
-import { useTransactions } from "../hooks/useTransactions";
+import { getTransactionStatistics } from "../utils/transactions";
 
 // 🧩 按日期分组z
 function groupByMonth(data) {
@@ -28,10 +28,12 @@ function groupByMonth(data) {
     .map((key) => ({ title: key, data: groups[key] }));
 }
 
-function getStatisticsMonth(groups, getStatistics) {
+function getStatisticsMonth(groups) {
   const statisticsMonth = {};
   groups.forEach((transactions) => {
-    statisticsMonth[transactions.title] = getStatistics(transactions.data);
+    statisticsMonth[transactions.title] = getTransactionStatistics(
+      transactions.data
+    );
   });
 
   return statisticsMonth;
@@ -51,8 +53,7 @@ export default function CollapsibleTransactionList({ transactions }) {
 
   const sections = groupByMonth(transactions);
 
-  const { getStatistics } = useTransactions();
-  const statisticsMonth = getStatisticsMonth(sections, getStatistics);
+  const statisticsMonth = getStatisticsMonth(sections);
 
   const sectionsToRender = sections.map((s) =>
     collapsed[s.title] ? { ...s, data: [] } : s

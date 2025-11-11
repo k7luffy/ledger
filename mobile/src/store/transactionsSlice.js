@@ -1,4 +1,4 @@
-import { createSlice, nanoid } from "@reduxjs/toolkit";
+import { createSelector, createSlice, nanoid } from "@reduxjs/toolkit";
 
 const initialState = {
   list: [
@@ -53,5 +53,15 @@ export default transactionsSlice.reducer;
 
 // Selectors
 export const selectAllRecords = (state) => state.transactions.list;
+// export const selectRecordsByMonth = (state, yyyyMm) =>
+//   state.transactions.list.filter((r) => (r.dateISO ?? "").startsWith(yyyyMm));
+
+export const makeSelectRecordsByMonth = () =>
+  createSelector(
+    [(state) => state.transactions.list, (_, yyyyMm) => yyyyMm],
+    (list, yyyyMm) =>
+      list.filter((record) => (record.dateISO ?? "").startsWith(yyyyMm))
+  );
+
 export const selectRecordsByDate = (state, yyyyMmDd) =>
   state.transactions.list.filter((r) => (r.dateISO ?? "").startsWith(yyyyMmDd));

@@ -10,12 +10,35 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Svg, { Circle } from "react-native-svg";
+import { useSelector } from "react-redux";
+import {
+  makeSelectRecordsByMonth,
+  selectAllRecords,
+  selectRecordsByMonth,
+} from "../store/transactionsSlice";
+import { getTransactionStatistics } from "../utils/transactions";
+import TransactionItem from "../components/TransactionItem";
 
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState("home");
+  const thisMonth = new Date();
+  const yyyyMm = `${thisMonth.getFullYear()}-${String(
+    thisMonth.getMonth() + 1
+  ).padStart(2, "0")}`;
+  const selectRecordsByMonth = useMemo(makeSelectRecordsByMonth, []);
+  const thisMonthTransactions = useSelector((state) =>
+    selectRecordsByMonth(state, yyyyMm)
+  );
+  const allTxns = useSelector(selectAllRecords);
+  const topFiveTxns = Array.isArray(allTxns) ? allTxns.slice(0, 3) : [];
+
+  const {
+    totalIncome: totalIncomeThisMonth,
+    totalExpense: totalExpenseThisMonth,
+    balance: balanceThisMonth,
+  } = getTransactionStatistics(thisMonthTransactions);
 
   const renderTxn = ({ item }) => (
     <View style={styles.txnRow}>
@@ -89,20 +112,23 @@ export default function HomeScreen({ navigation }) {
                 justifyContent: "space-between",
               }}
             >
-              <Text style={styles.cardTitle}>账户结余</Text>
+              <Text style={styles.cardTitle}>本月收支统计</Text>
               <MaterialCommunityIcons
                 name="dots-horizontal"
                 size={20}
                 color="#C49D74"
               />
             </View>
-            <Text style={styles.cardMoney}>{currency(summary.balance)}</Text>
+            <Text style={[styles.cardSub, { marginTop: 20 }]}>总支出</Text>
+            <Text style={styles.cardMoney}>
+              {currency(totalExpenseThisMonth)}
+            </Text>
             <View style={styles.cardRow}>
               <Text style={styles.cardSub}>
-                总收入：{currency(summary.totalIn)}
+                总收入：{currency(totalIncomeThisMonth)}
               </Text>
               <Text style={styles.cardSub}>
-                总支出：{currency(summary.totalOut)}
+                结余：{currency(balanceThisMonth)}
               </Text>
             </View>
           </View>
@@ -147,9 +173,9 @@ export default function HomeScreen({ navigation }) {
             {/* 列表 */}
             <View style={styles.recentTxn}>
               <FlatList
-                data={TXNS}
+                data={topFiveTxns}
                 keyExtractor={(it) => it.id}
-                renderItem={renderTxn}
+                renderItem={({ item }) => <TransactionItem item={item} />}
                 ItemSeparatorComponent={() => (
                   <View style={{ height: 1, backgroundColor: "#f9f8f8ff" }} />
                 )}
@@ -460,7 +486,6 @@ const styles = StyleSheet.create({
     color: COLORS.brown,
     fontSize: 28,
     fontWeight: "800",
-    marginTop: 20,
   },
   cardRow: {
     marginTop: 6,
