@@ -11,7 +11,6 @@ import { Provider } from "react-redux";
 import { store } from "./src/store";
 import AccountsScreen from "./src/screens/AccountsScreen";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const Stack = createNativeStackNavigator();
 
@@ -40,7 +39,6 @@ export default function App() {
             tabBarItemStyle: { paddingTop: 15 },
             tabBarLabelStyle: {
               marginTop: 15, // label 离底边的距离
-              fontWeight: "700",
               fontSize: 11,
               fontWeight: "700",
             },
