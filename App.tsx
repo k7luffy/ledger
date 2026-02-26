@@ -25,7 +25,7 @@ export default function App() {
           component={LedgerScreen}
           options={{
             headerShown: false,
-            title: "Ledger",
+            title: "账本",
             tabBarIcon: ({ color, size, focused }) => (
               <MaterialCommunityIcons
                 name={focused ? "file-document" : "file-document-outline"}
@@ -40,7 +40,7 @@ export default function App() {
           component={AssetsScreen}
           options={{
             headerShown: false,
-            title: "Assets",
+            title: "资产",
             tabBarIcon: ({ color, size, focused }) => (
               <MaterialCommunityIcons
                 name={focused ? "wallet" : "wallet-outline"}
@@ -55,7 +55,7 @@ export default function App() {
           component={SavingsScreen}
           options={{
             headerShown: false,
-            title: "Savings",
+            title: "存钱",
             tabBarIcon: ({ color, size, focused }) => (
               <MaterialCommunityIcons
                 name={focused ? "piggy-bank" : "piggy-bank-outline"}
@@ -70,7 +70,7 @@ export default function App() {
           component={StatisticsScreen}
           options={{
             headerShown: false,
-            title: "Statistics",
+            title: "统计",
             tabBarIcon: ({ color, size, focused }) => (
               <MaterialCommunityIcons
                 name={focused ? "chart-box" : "chart-box-outline"}
