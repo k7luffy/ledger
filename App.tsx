@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
-import AssetsScreen from "./AssetsScreen";
-import LedgerScreen from "./LedgerScreen";
-import SavingsScreen from "./SavingsScreen";
-import StatisticsScreen from "./StatisticsScreen";
+import AssetsScreen from "./screens/AssetsScreen";
+import LedgerScreen from "./screens/LedgerScreen";
+import SavingsScreen from "./screens/SavingsScreen";
+import StatisticsScreen from "./screens/StatisticsScreen";
 
 const Tab = createBottomTabNavigator();
 
