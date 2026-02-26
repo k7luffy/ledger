@@ -1,12 +1,52 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
+import { type ComponentProps, type ComponentType } from "react";
 import AssetsScreen from "./screens/AssetsScreen";
 import LedgerScreen from "./screens/LedgerScreen";
 import SavingsScreen from "./screens/SavingsScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
 
 const Tab = createBottomTabNavigator();
+
+type TabConfig = {
+  name: string;
+  title: string;
+  component: ComponentType;
+  activeIcon: ComponentProps<typeof MaterialCommunityIcons>["name"];
+  inactiveIcon: ComponentProps<typeof MaterialCommunityIcons>["name"];
+};
+
+const tabs: TabConfig[] = [
+  {
+    name: "Ledger",
+    title: "账本",
+    component: LedgerScreen,
+    activeIcon: "file-document",
+    inactiveIcon: "file-document-outline",
+  },
+  {
+    name: "Assets",
+    title: "资产",
+    component: AssetsScreen,
+    activeIcon: "wallet",
+    inactiveIcon: "wallet-outline",
+  },
+  {
+    name: "Savings",
+    title: "存钱",
+    component: SavingsScreen,
+    activeIcon: "piggy-bank",
+    inactiveIcon: "piggy-bank-outline",
+  },
+  {
+    name: "Statistics",
+    title: "统计",
+    component: StatisticsScreen,
+    activeIcon: "chart-box",
+    inactiveIcon: "chart-box-outline",
+  },
+];
 
 export default function App() {
   return (
@@ -20,66 +60,23 @@ export default function App() {
           },
         }}
       >
-        <Tab.Screen
-          name="Ledger"
-          component={LedgerScreen}
-          options={{
-            headerShown: false,
-            title: "账本",
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? "file-document" : "file-document-outline"}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Assets"
-          component={AssetsScreen}
-          options={{
-            headerShown: false,
-            title: "资产",
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? "wallet" : "wallet-outline"}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Savings"
-          component={SavingsScreen}
-          options={{
-            headerShown: false,
-            title: "存钱",
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? "piggy-bank" : "piggy-bank-outline"}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Statistics"
-          component={StatisticsScreen}
-          options={{
-            headerShown: false,
-            title: "统计",
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? "chart-box" : "chart-box-outline"}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
+        {tabs.map((tab) => (
+          <Tab.Screen
+            key={tab.name}
+            name={tab.name}
+            component={tab.component}
+            options={{
+              title: tab.title,
+              tabBarIcon: ({ color, size, focused }) => (
+                <MaterialCommunityIcons
+                  name={focused ? tab.activeIcon : tab.inactiveIcon}
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+          />
+        ))}
       </Tab.Navigator>
     </NavigationContainer>
   );

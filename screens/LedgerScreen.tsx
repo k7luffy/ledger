@@ -78,68 +78,28 @@ export default function LedgerScreen() {
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        paddingTop: insets.top + 9,
-        paddingHorizontal: 15,
-        // backgroundColor: "red",
-      }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
+    <View style={[styles.screenContainer, { paddingTop: insets.top + 9 }]}>
+      <View style={styles.topRow}>
         <Pressable>
-          <View>
-            <Fontisto name="arrow-swap" size={18} color={"#3E94FD"} />
-          </View>
+          <Fontisto name="arrow-swap" size={18} color="#3E94FD" />
         </Pressable>
         <Pressable>
           <MaterialCommunityIcons
             name="dots-horizontal-circle"
             size={25}
-            color={"#3E94FD"}
+            color="#3E94FD"
           />
         </Pressable>
       </View>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingTop: 15,
-        }}
-      >
-        <Text style={{ fontSize: 30, fontWeight: "800", color: "#111827" }}>
-          默认账本
-        </Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.titleText}>默认账本</Text>
         <Pressable>
           <Ionicons name="person-circle-outline" size={38} color="#3E94FD" />
         </Pressable>
       </View>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingTop: 13,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 7,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>
-            2026年2月
-          </Text>
+      <View style={styles.monthRow}>
+        <View style={styles.monthLeft}>
+          <Text style={styles.monthText}>2026年2月</Text>
           <TouchableOpacity style={styles.navBtn}>
             <Entypo name="chevron-left" size={17} color="#A9A9B0" />
           </TouchableOpacity>
@@ -152,7 +112,7 @@ export default function LedgerScreen() {
         </Pressable>
       </View>
 
-      <View style={{ paddingTop: 14 }}>
+      <View style={styles.cardSection}>
         <View style={[styles.summaryCard, { width: cardWidth }]}>
           <FlatList
             data={summaryCards}
@@ -183,25 +143,15 @@ export default function LedgerScreen() {
                 <Text style={styles.summaryAmount}>{item.amount}</Text>
 
                 <View style={styles.summaryMetaRow}>
-                  <View style={{ flexDirection: "row", gap: 5 }}>
-                    <Text
-                      style={[styles.summaryMetaText, { color: "#9C9C9C" }]}
-                    >
-                      {item.leftLabel}
-                    </Text>
-                    <Text style={styles.summaryMetaText}>{item.leftValue}</Text>
-                  </View>
-
-                  <View style={{ flexDirection: "row", gap: 5 }}>
-                    <Text
-                      style={[styles.summaryMetaText, { color: "#9C9C9C" }]}
-                    >
-                      {item.rightLabel}
-                    </Text>
-                    <Text style={styles.summaryMetaText}>
-                      {item.rightValue}
-                    </Text>
-                  </View>
+                  {[
+                    { label: item.leftLabel, value: item.leftValue },
+                    { label: item.rightLabel, value: item.rightValue },
+                  ].map((metric) => (
+                    <View key={`${item.id}-${metric.label}`} style={styles.metricItem}>
+                      <Text style={styles.metricLabel}>{metric.label}</Text>
+                      <Text style={styles.summaryMetaText}>{metric.value}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -225,10 +175,45 @@ export default function LedgerScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: {
+  screenContainer: {
+    flex: 1,
+    paddingHorizontal: 15,
+  },
+  topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 15,
+  },
+  titleText: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  monthRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 13,
+  },
+  monthLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 7,
+  },
+  monthText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  cardSection: {
+    paddingTop: 14,
   },
   navBtn: {
     width: 20,
@@ -283,6 +268,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
     flexDirection: "row",
     gap: 16,
+  },
+  metricItem: {
+    flexDirection: "row",
+    gap: 5,
+  },
+  metricLabel: {
+    color: "#9C9C9C",
+    fontSize: 15,
+    fontWeight: "500",
   },
   summaryMetaText: {
     color: "#656565",
