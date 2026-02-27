@@ -1,4 +1,4 @@
-import { type ComponentProps, useMemo, useState } from "react";
+import { type ComponentProps, useMemo, useRef, useState } from "react";
 import {
   Entypo,
   FontAwesome,
@@ -6,6 +6,7 @@ import {
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import {
   FlatList,
   Modal,
@@ -70,6 +71,22 @@ type KeypadKey = {
   label: string;
   variant?: "default" | "secondary" | "primary";
 };
+
+type MathOperator = "+" | "-" | "×" | "÷";
+
+const keypadDigitMap: Record<string, string> = {
+  k0: "0",
+  k1: "1",
+  k2: "2",
+  k3: "3",
+  k4: "4",
+  k5: "5",
+  k6: "6",
+  k7: "7",
+  k8: "8",
+  k9: "9",
+};
+const maxIntegerDigits = 9;
 
 const summaryCards: SummaryCard[] = [
   {
@@ -252,6 +269,104 @@ const parseAmount = (value: string) => {
   return Number.isNaN(amount) ? 0 : amount;
 };
 
+const formatInputAmount = (value: string) => {
+  if (value === "" || value === "0") {
+    return "0.00";
+  }
+
+  const hasDot = value.includes(".");
+  const [rawIntegerPart, decimalPart = ""] = value.split(".");
+  const integerPart = rawIntegerPart.replace(/^0+(?=\d)/, "") || "0";
+  const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  if (!hasDot) {
+    return groupedInteger;
+  }
+
+  return `${groupedInteger}.${decimalPart}`;
+};
+
+const appendDigitToInput = (value: string, digit: string) => {
+  const [rawIntegerPart, decimalPart] = value.split(".");
+  const integerPart = rawIntegerPart.replace(/^0+(?=\d)/, "") || "0";
+
+  if (decimalPart !== undefined) {
+    if (decimalPart.length >= 2) {
+      return value;
+    }
+    return `${integerPart}.${decimalPart}${digit}`;
+  }
+
+  const nextInteger = integerPart === "0" ? digit : `${integerPart}${digit}`;
+  if (nextInteger.length > maxIntegerDigits) {
+    return value;
+  }
+
+  return nextInteger.replace(/^0+(?=\d)/, "") || "0";
+};
+
+const appendDotToInput = (value: string) =>
+  value.includes(".") ? value : `${value}.`;
+
+const deleteInputChar = (value: string, canBeEmpty: boolean) => {
+  if (value.length <= 1) {
+    return canBeEmpty ? "" : "0";
+  }
+
+  const next = value.slice(0, -1);
+  if (next === "") {
+    return canBeEmpty ? "" : "0";
+  }
+
+  if (next.endsWith(".")) {
+    const trimmed = next.slice(0, -1);
+    if (trimmed === "") {
+      return canBeEmpty ? "" : "0";
+    }
+    return trimmed;
+  }
+
+  return next.replace(/^0+(?=\d)/, "") || "0";
+};
+
+const evaluateExpression = (
+  leftInput: string,
+  operator: MathOperator,
+  rightInput: string,
+) => {
+  const leftNumber = Number.parseFloat(leftInput);
+  const rightNumber = Number.parseFloat(rightInput);
+
+  if (Number.isNaN(leftNumber) || Number.isNaN(rightNumber)) {
+    return leftInput;
+  }
+
+  let result = leftNumber;
+  if (operator === "+") {
+    result = leftNumber + rightNumber;
+  } else if (operator === "-") {
+    result = leftNumber - rightNumber;
+  } else if (operator === "×") {
+    result = leftNumber * rightNumber;
+  } else if (rightNumber === 0) {
+    return "0";
+  } else {
+    result = leftNumber / rightNumber;
+  }
+
+  if (!Number.isFinite(result)) {
+    return "0";
+  }
+
+  const rounded = Math.round(result * 100) / 100;
+  if (Object.is(rounded, -0)) {
+    return "0";
+  }
+
+  const normalized = rounded.toFixed(2).replace(/\.?0+$/, "");
+  return normalized === "-0" ? "0" : normalized;
+};
+
 const formatDateLabel = (date: string) => {
   const [, month, day] = date.split("-");
   return `${month}/${day}`;
@@ -299,6 +414,12 @@ export default function LedgerScreen() {
   const { width } = useWindowDimensions();
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [leftInput, setLeftInput] = useState("0");
+  const [pendingOperator, setPendingOperator] = useState<MathOperator | null>(
+    null,
+  );
+  const [rightInput, setRightInput] = useState("");
+  const deleteLongPressRef = useRef(false);
   const [collapsedSections, setCollapsedSections] = useState<
     Record<string, boolean>
   >({});
@@ -316,10 +437,26 @@ export default function LedgerScreen() {
       })),
     [collapsedSections, transactionSections],
   );
+  const leftAmountDisplay = useMemo(
+    () => formatInputAmount(leftInput),
+    [leftInput],
+  );
+  const rightAmountDisplay = useMemo(
+    () => {
+      if (rightInput === "") {
+        return "";
+      }
+      if (rightInput === "0") {
+        return "0";
+      }
+      return formatInputAmount(rightInput);
+    },
+    [rightInput],
+  );
   const keypadPanGesture = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetY([-4, 4])
+        .activeOffsetY([-12, 12])
         .onUpdate(() => {
           "worklet";
         }),
@@ -339,6 +476,116 @@ export default function LedgerScreen() {
       ...prev,
       [sectionKey]: !prev[sectionKey],
     }));
+  };
+
+  const applyOperatorFromKey = (keyId: string) => {
+    const primaryOperator: MathOperator = keyId === "kop1" ? "+" : "-";
+    const secondaryOperator: MathOperator = keyId === "kop1" ? "×" : "÷";
+    const leftNumber = Number.parseFloat(leftInput);
+
+    if (!pendingOperator) {
+      if (Number.isNaN(leftNumber) || leftNumber === 0) {
+        return;
+      }
+      setPendingOperator(primaryOperator);
+      return;
+    }
+
+    if (rightInput === "") {
+      if (pendingOperator === primaryOperator) {
+        setPendingOperator(secondaryOperator);
+        return;
+      }
+      if (pendingOperator === secondaryOperator) {
+        setPendingOperator(primaryOperator);
+        return;
+      }
+      setPendingOperator(primaryOperator);
+      return;
+    }
+
+    const result = evaluateExpression(leftInput, pendingOperator, rightInput);
+    setLeftInput(result);
+    setRightInput("");
+    setPendingOperator(primaryOperator);
+  };
+
+  const handleAmountKeyPress = (key: KeypadKey) => {
+    if (key.id === "kdel") {
+      if (pendingOperator) {
+        if (rightInput !== "") {
+          setRightInput((prev) => deleteInputChar(prev, true));
+          return;
+        }
+        setPendingOperator(null);
+        return;
+      }
+
+      setLeftInput((prev) => deleteInputChar(prev, false));
+      return;
+    }
+
+    if (key.id === "kdot") {
+      if (pendingOperator) {
+        setRightInput((prev) => (prev === "" ? "0." : appendDotToInput(prev)));
+        return;
+      }
+
+      setLeftInput((prev) => appendDotToInput(prev));
+      return;
+    }
+
+    if (key.id === "kop1" || key.id === "kop2") {
+      applyOperatorFromKey(key.id);
+      return;
+    }
+
+    if (key.id === "kdone") {
+      if (pendingOperator && rightInput !== "") {
+        const result = evaluateExpression(
+          leftInput,
+          pendingOperator,
+          rightInput,
+        );
+        setLeftInput(result);
+        setRightInput("");
+        setPendingOperator(null);
+      }
+      return;
+    }
+
+    const digit = keypadDigitMap[key.id];
+    if (!digit) {
+      return;
+    }
+
+    if (pendingOperator) {
+      setRightInput((prev) =>
+        appendDigitToInput(prev === "" ? "0" : prev, digit),
+      );
+      return;
+    }
+
+    setLeftInput((prev) => appendDigitToInput(prev, digit));
+  };
+
+  const handleDeleteLongPress = () => {
+    deleteLongPressRef.current = true;
+    setLeftInput("0");
+    setRightInput("");
+    setPendingOperator(null);
+  };
+
+  const getKeyLabel = (key: KeypadKey) => {
+    if (key.id === "kdone") {
+      return pendingOperator && rightInput !== "" ? "=" : "完成";
+    }
+
+    return key.label;
+  };
+
+  const triggerKeyHaptic = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
   return (
@@ -532,7 +779,12 @@ export default function LedgerScreen() {
         presentationStyle="pageSheet"
         animationType="slide"
         allowSwipeDismissal
-        onRequestClose={() => setIsAddModalVisible(false)}
+        onRequestClose={() => {
+          setLeftInput("0");
+          setRightInput("");
+          setPendingOperator(null);
+          setIsAddModalVisible(false);
+        }}
       >
         <View style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
           <View style={styles.modalHeaderRow}>
@@ -582,11 +834,7 @@ export default function LedgerScreen() {
                         color={category.active ? "#FFFFFF" : "#5F626A"}
                       />
                     </View>
-                    <Text
-                      style={styles.categoryLabel}
-                    >
-                      {category.label}
-                    </Text>
+                    <Text style={styles.categoryLabel}>{category.label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -618,7 +866,19 @@ export default function LedgerScreen() {
               </ScrollView>
 
               <View style={styles.amountCard}>
-                <Text style={styles.amountDisplay}>¥7.00</Text>
+                <View style={styles.amountDisplayRow}>
+                  <Text style={styles.amountDisplay}>
+                    ¥ {leftAmountDisplay}
+                  </Text>
+                  {pendingOperator && (
+                    <Text style={styles.amountOperator}>{pendingOperator}</Text>
+                  )}
+                  {pendingOperator && rightInput !== "" && (
+                    <Text style={styles.amountDisplay}>
+                      {rightAmountDisplay}
+                    </Text>
+                  )}
+                </View>
 
                 <View style={styles.amountDivider} />
 
@@ -647,10 +907,42 @@ export default function LedgerScreen() {
                       {row.map((key) => (
                         <Pressable
                           key={key.id}
+                          onPressIn={() => {
+                            if (!keypadDigitMap[key.id]) {
+                              return;
+                            }
+                            triggerKeyHaptic();
+                            handleAmountKeyPress(key);
+                          }}
+                          onPress={() => {
+                            if (keypadDigitMap[key.id]) {
+                              return;
+                            }
+                            if (
+                              key.id === "kdel" &&
+                              deleteLongPressRef.current
+                            ) {
+                              deleteLongPressRef.current = false;
+                              return;
+                            }
+                            triggerKeyHaptic();
+                            handleAmountKeyPress(key);
+                          }}
+                          onLongPress={() => {
+                            if (key.id === "kdel") {
+                              void Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Medium,
+                              );
+                              handleDeleteLongPress();
+                            }
+                          }}
+                          onPressOut={() => {
+                            if (key.id === "kdel") {
+                              deleteLongPressRef.current = false;
+                            }
+                          }}
                           style={({ pressed }) => [
                             styles.keypadKey,
-                            key.variant === "secondary" &&
-                              styles.keypadKeySecondary,
                             key.variant === "primary" &&
                               styles.keypadKeyPrimary,
                             pressed && styles.keypadKeyPressed,
@@ -665,7 +957,7 @@ export default function LedgerScreen() {
                                 styles.keypadKeyTextPrimary,
                             ]}
                           >
-                            {key.label}
+                            {getKeyLabel(key)}
                           </Text>
                         </Pressable>
                       ))}
@@ -1028,10 +1320,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 8,
   },
+  amountDisplayRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   amountDisplay: {
     color: "#EC6252",
     fontSize: 40,
     lineHeight: 40,
+    fontFamily: "DINCondensed-Bold",
+  },
+  amountOperator: {
+    color: "#EC6252",
+    fontSize: 30,
+    lineHeight: 40,
+    fontWeight: "700",
+    marginHorizontal: 2,
+    includeFontPadding: false,
+    transform: [{ translateY: -4 }],
     fontFamily: "DINCondensed-Bold",
   },
   amountDivider: {
@@ -1075,16 +1381,16 @@ const styles = StyleSheet.create({
   keypadContainer: {
     paddingTop: 8,
     paddingBottom: 4,
-    gap: 8,
+    gap: 5,
   },
   keypadRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 5,
   },
   keypadKey: {
     flex: 1,
     height: 50,
-    borderRadius: 16,
+    borderRadius: 10,
     backgroundColor: "#F6F6F7",
     alignItems: "center",
     justifyContent: "center",
