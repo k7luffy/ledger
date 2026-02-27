@@ -1,15 +1,18 @@
 import { type ComponentProps, useMemo, useState } from "react";
 import {
   Entypo,
+  FontAwesome,
   Fontisto,
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import {
   FlatList,
+  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
+  ScrollView,
   SectionList,
   StyleSheet,
   Text,
@@ -17,6 +20,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type SummaryCard = {
@@ -45,6 +49,26 @@ type TransactionSection = {
   weekday: string;
   totalExpense: number;
   data: Transaction[];
+};
+
+type AddCategory = {
+  id: string;
+  label: string;
+  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
+  active?: boolean;
+};
+
+type QuickAction = {
+  id: string;
+  label: string;
+  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
+  iconBg: string;
+};
+
+type KeypadKey = {
+  id: string;
+  label: string;
+  variant?: "default" | "secondary" | "primary";
 };
 
 const summaryCards: SummaryCard[] = [
@@ -139,6 +163,85 @@ const transactions: Transaction[] = [
   },
 ];
 
+const addCategories: AddCategory[] = [
+  { id: "food", label: "餐饮", icon: "food-drumstick-outline", active: true },
+  { id: "shopping", label: "购物", icon: "cart-outline" },
+  { id: "cloth", label: "服饰", icon: "tshirt-crew-outline" },
+  { id: "daily", label: "日用", icon: "bottle-tonic-outline" },
+  { id: "digital", label: "数码", icon: "cellphone" },
+  { id: "beauty", label: "美妆", icon: "lipstick" },
+  { id: "skin", label: "护肤", icon: "bottle-tonic-plus-outline" },
+  { id: "app", label: "应用软件", icon: "application-outline" },
+  { id: "house", label: "住房", icon: "home-city-outline" },
+  { id: "traffic", label: "交通", icon: "bus" },
+  { id: "game", label: "娱乐", icon: "gamepad-variant-outline" },
+  { id: "medical", label: "医疗", icon: "medical-bag" },
+  { id: "phone", label: "通讯", icon: "phone-outline" },
+  { id: "car", label: "汽车", icon: "car-outline" },
+  { id: "study", label: "学习", icon: "book-open-page-variant-outline" },
+  { id: "office", label: "办公", icon: "printer-outline" },
+  { id: "sport", label: "运动", icon: "badminton" },
+  { id: "social", label: "社交", icon: "account-group-outline" },
+  { id: "favor", label: "人情", icon: "hand-heart-outline" },
+  { id: "baby", label: "育儿", icon: "baby-face-outline" },
+  { id: "pet", label: "宠物", icon: "paw-outline" },
+  { id: "travel", label: "旅行", icon: "bag-suitcase-outline" },
+  { id: "vacation", label: "度假", icon: "palm-tree" },
+  { id: "smoke", label: "烟酒", icon: "glass-cocktail" },
+  { id: "lottery", label: "彩票", icon: "ticket-outline" },
+];
+
+const quickActions: QuickAction[] = [
+  {
+    id: "account",
+    label: "选择账户",
+    icon: "wallet-outline",
+    iconBg: "#F5C322",
+  },
+  {
+    id: "reimburse",
+    label: "报销",
+    icon: "checkbox-blank-circle-outline",
+    iconBg: "#D3D7DD",
+  },
+  {
+    id: "coupon",
+    label: "优惠",
+    icon: "ticket-percent-outline",
+    iconBg: "#4ECD67",
+  },
+  { id: "image", label: "图片", icon: "image-outline", iconBg: "#F8A310" },
+  { id: "tag", label: "标签", icon: "tag-outline", iconBg: "#2A9EBA" },
+  { id: "setting", label: "设置", icon: "cog-outline", iconBg: "#8D93A0" },
+];
+
+const keypadRows: KeypadKey[][] = [
+  [
+    { id: "k1", label: "1" },
+    { id: "k2", label: "2" },
+    { id: "k3", label: "3" },
+    { id: "kop1", label: "+ ×" },
+  ],
+  [
+    { id: "k4", label: "4" },
+    { id: "k5", label: "5" },
+    { id: "k6", label: "6" },
+    { id: "kop2", label: "- ÷" },
+  ],
+  [
+    { id: "k7", label: "7" },
+    { id: "k8", label: "8" },
+    { id: "k9", label: "9" },
+    { id: "ksave", label: "保存再记", variant: "secondary" },
+  ],
+  [
+    { id: "kdot", label: "." },
+    { id: "k0", label: "0" },
+    { id: "kdel", label: "⌫" },
+    { id: "kdone", label: "完成", variant: "primary" },
+  ],
+];
+
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -195,6 +298,7 @@ export default function LedgerScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<
     Record<string, boolean>
   >({});
@@ -202,7 +306,7 @@ export default function LedgerScreen() {
   const cardInnerWidth = cardWidth - 32;
   const transactionSections = useMemo(
     () => buildTransactionSections(transactions),
-    [],
+    [transactions],
   );
   const displayedSections = useMemo(
     () =>
@@ -211,6 +315,15 @@ export default function LedgerScreen() {
         data: collapsedSections[section.sectionKey] ? [] : section.data,
       })),
     [collapsedSections, transactionSections],
+  );
+  const keypadPanGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY([-4, 4])
+        .onUpdate(() => {
+          "worklet";
+        }),
+    [],
   );
 
   const handleCardScrollEnd = (
@@ -288,7 +401,9 @@ export default function LedgerScreen() {
                   keyExtractor={(item) => item.id}
                   onMomentumScrollEnd={handleCardScrollEnd}
                   renderItem={({ item }) => (
-                    <View style={[styles.summarySlide, { width: cardInnerWidth }]}>
+                    <View
+                      style={[styles.summarySlide, { width: cardInnerWidth }]}
+                    >
                       <View style={styles.summaryTagRow}>
                         <MaterialCommunityIcons
                           name={item.icon}
@@ -318,7 +433,9 @@ export default function LedgerScreen() {
                             key={`${item.id}-${metric.label}`}
                             style={styles.metricItem}
                           >
-                            <Text style={styles.metricLabel}>{metric.label}</Text>
+                            <Text style={styles.metricLabel}>
+                              {metric.label}
+                            </Text>
                             <Text style={styles.summaryMetaText}>
                               {metric.value}
                             </Text>
@@ -390,7 +507,9 @@ export default function LedgerScreen() {
                 </View>
 
                 <View>
-                  <Text style={styles.transactionCategory}>{item.category}</Text>
+                  <Text style={styles.transactionCategory}>
+                    {item.category}
+                  </Text>
                   <Text style={styles.transactionTime}>{item.time}</Text>
                 </View>
               </View>
@@ -400,6 +519,164 @@ export default function LedgerScreen() {
           );
         }}
       />
+
+      <Pressable
+        style={[styles.fabButton, { bottom: 20 }]}
+        onPress={() => setIsAddModalVisible(true)}
+      >
+        <FontAwesome name="plus" size={28} color="#FFFFFF" />
+      </Pressable>
+
+      <Modal
+        visible={isAddModalVisible}
+        presentationStyle="pageSheet"
+        animationType="slide"
+        allowSwipeDismissal
+        onRequestClose={() => setIsAddModalVisible(false)}
+      >
+        <View style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
+          <View style={styles.modalHeaderRow}>
+            <Pressable onPress={() => setIsAddModalVisible(false)}>
+              <Text style={styles.modalCancelText}>取消</Text>
+            </Pressable>
+
+            <View style={styles.billTypeSwitch}>
+              <Pressable style={[styles.billTypeBtn, styles.billTypeBtnActive]}>
+                <Text style={[styles.billTypeText, styles.billTypeTextActive]}>
+                  支出
+                </Text>
+              </Pressable>
+              <View style={styles.billTypeDivider} />
+              <Pressable style={styles.billTypeBtn}>
+                <Text style={styles.billTypeText}>收入</Text>
+              </Pressable>
+              <View style={styles.billTypeDivider} />
+              <Pressable style={styles.billTypeBtn}>
+                <Text style={styles.billTypeText}>转账</Text>
+              </Pressable>
+            </View>
+
+            <Pressable>
+              <Text style={styles.modalBookText}>默认账本</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.modalBody}>
+            <ScrollView
+              style={styles.categoryScroll}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              <View style={styles.categoryGrid}>
+                {addCategories.map((category) => (
+                  <Pressable key={category.id} style={styles.categoryItem}>
+                    <View
+                      style={[
+                        styles.categoryIconCircle,
+                        category.active && styles.categoryIconCircleActive,
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name={category.icon}
+                        size={25}
+                        color={category.active ? "#FFFFFF" : "#5F626A"}
+                      />
+                    </View>
+                    <Text
+                      style={styles.categoryLabel}
+                    >
+                      {category.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalBottomSection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.quickActionRow}
+              >
+                {quickActions.map((item) => (
+                  <Pressable key={item.id} style={styles.quickActionChip}>
+                    <View
+                      style={[
+                        styles.quickActionIconBg,
+                        { backgroundColor: item.iconBg },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name={item.icon}
+                        size={13}
+                        color="#FFFFFF"
+                      />
+                    </View>
+                    <Text style={styles.quickActionText}>{item.label}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              <View style={styles.amountCard}>
+                <Text style={styles.amountDisplay}>¥7.00</Text>
+
+                <View style={styles.amountDivider} />
+
+                <View style={styles.amountFooterRow}>
+                  <View style={styles.timeBadge}>
+                    <Ionicons name="time-outline" size={19} color="#5F6878" />
+                    <Text style={styles.timeBadgeText}>11:28</Text>
+                  </View>
+
+                  <Text style={styles.notePlaceholder}>点击填写备注</Text>
+
+                  <Pressable style={styles.foldBtn}>
+                    <MaterialCommunityIcons
+                      name="chevron-up"
+                      size={20}
+                      color="#6C717D"
+                    />
+                  </Pressable>
+                </View>
+              </View>
+
+              <GestureDetector gesture={keypadPanGesture}>
+                <View style={styles.keypadContainer}>
+                  {keypadRows.map((row) => (
+                    <View key={row[0].id} style={styles.keypadRow}>
+                      {row.map((key) => (
+                        <Pressable
+                          key={key.id}
+                          style={({ pressed }) => [
+                            styles.keypadKey,
+                            key.variant === "secondary" &&
+                              styles.keypadKeySecondary,
+                            key.variant === "primary" &&
+                              styles.keypadKeyPrimary,
+                            pressed && styles.keypadKeyPressed,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.keypadKeyText,
+                              key.variant === "secondary" &&
+                                styles.keypadKeyTextSecondary,
+                              key.variant === "primary" &&
+                                styles.keypadKeyTextPrimary,
+                            ]}
+                          >
+                            {key.label}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </GestureDetector>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -601,5 +878,239 @@ const styles = StyleSheet.create({
     color: "#12131A",
     fontSize: 15,
     fontWeight: "400",
+  },
+  fabButton: {
+    position: "absolute",
+    right: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 45,
+    backgroundColor: "#F8BF16",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+    zIndex: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#EFEFF1",
+  },
+  modalHeaderRow: {
+    height: 60,
+    paddingTop: 10,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  modalCancelText: {
+    color: "#777B84",
+    fontSize: 17,
+    fontWeight: "500",
+  },
+  billTypeSwitch: {
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: "#E4E4E4",
+    padding: 2,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  billTypeBtn: {
+    minWidth: 38,
+    height: "100%",
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  billTypeBtnActive: {
+    backgroundColor: "#F4F4F6",
+    shadowColor: "#787777",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  billTypeText: {
+    color: "#2F3138",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  billTypeTextActive: {
+    color: "#14161D",
+    fontWeight: "700",
+  },
+  billTypeDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: "#BEBFC6",
+  },
+  modalBookText: {
+    color: "#2787F8",
+    fontSize: 17,
+    fontWeight: "400",
+  },
+  modalBody: {
+    flex: 1,
+    minHeight: 0,
+  },
+  categoryScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
+  modalScrollContent: {
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+  },
+  modalBottomSection: {
+    paddingHorizontal: 14,
+    paddingTop: 2,
+    paddingBottom: 8,
+  },
+  categoryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 14,
+  },
+  categoryItem: {
+    width: "20%",
+    alignItems: "center",
+    gap: 3,
+  },
+  categoryIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 31,
+    backgroundColor: "#E6E6E9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryIconCircleActive: {
+    backgroundColor: "#F36855",
+  },
+  categoryLabel: {
+    color: "#737373",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+
+  quickActionRow: {
+    paddingVertical: 5,
+    paddingRight: 10,
+    gap: 10,
+  },
+  quickActionChip: {
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: "#F6F6F7",
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  quickActionIconBg: {
+    width: 20,
+    height: 20,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickActionText: {
+    color: "#22242B",
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  amountCard: {
+    backgroundColor: "#F6F6F7",
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  amountDisplay: {
+    color: "#EC6252",
+    fontSize: 40,
+    lineHeight: 40,
+    fontFamily: "DINCondensed-Bold",
+  },
+  amountDivider: {
+    marginTop: 8,
+    height: 1,
+    backgroundColor: "#E3E3E6",
+  },
+  amountFooterRow: {
+    marginTop: 5,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  timeBadge: {
+    height: 28,
+    borderRadius: 22,
+    backgroundColor: "#ECECEE",
+    paddingHorizontal: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  timeBadgeText: {
+    color: "#4F5869",
+    fontSize: 15,
+  },
+  notePlaceholder: {
+    marginLeft: 12,
+    flex: 1,
+    color: "#c8c9cd",
+    fontSize: 15,
+    fontWeight: "400",
+  },
+  foldBtn: {
+    width: 20,
+    height: 20,
+    borderRadius: 22,
+    backgroundColor: "#ECECEE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  keypadContainer: {
+    paddingTop: 8,
+    paddingBottom: 4,
+    gap: 8,
+  },
+  keypadRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  keypadKey: {
+    flex: 1,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  keypadKeySecondary: {
+    backgroundColor: "#EAEBEE",
+  },
+  keypadKeyPrimary: {
+    backgroundColor: "#EF6453",
+  },
+  keypadKeyPressed: {
+    backgroundColor: "#ACAFBC",
+  },
+  keypadKeyText: {
+    color: "#4C5565",
+    fontSize: 22,
+    fontWeight: "500",
+  },
+  keypadKeyTextSecondary: {
+    color: "#4D5566",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  keypadKeyTextPrimary: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "700",
   },
 });

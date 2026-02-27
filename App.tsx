@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { type ComponentProps, type ComponentType } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AssetsScreen from "./screens/AssetsScreen";
 import LedgerScreen from "./screens/LedgerScreen";
 import SavingsScreen from "./screens/SavingsScreen";
@@ -50,34 +51,36 @@ const tabs: TabConfig[] = [
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: "#F2F2F2",
-            borderTopWidth: 0, // hide top hairline
-          },
-        }}
-      >
-        {tabs.map((tab) => (
-          <Tab.Screen
-            key={tab.name}
-            name={tab.name}
-            component={tab.component}
-            options={{
-              title: tab.title,
-              tabBarIcon: ({ color, size, focused }) => (
-                <MaterialCommunityIcons
-                  name={focused ? tab.activeIcon : tab.inactiveIcon}
-                  size={size}
-                  color={color}
-                />
-              ),
-            }}
-          />
-        ))}
-      </Tab.Navigator>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: {
+              backgroundColor: "#F2F2F2",
+              borderTopWidth: 0, // hide top hairline
+            },
+          }}
+        >
+          {tabs.map((tab) => (
+            <Tab.Screen
+              key={tab.name}
+              name={tab.name}
+              component={tab.component}
+              options={{
+                title: tab.title,
+                tabBarIcon: ({ color, size, focused }) => (
+                  <MaterialCommunityIcons
+                    name={focused ? tab.activeIcon : tab.inactiveIcon}
+                    size={size}
+                    color={color}
+                  />
+                ),
+              }}
+            />
+          ))}
+        </Tab.Navigator>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
