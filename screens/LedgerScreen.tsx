@@ -1,4 +1,10 @@
-import { type ComponentProps, useMemo, useRef, useState } from "react";
+import {
+  type ComponentProps,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Entypo,
   FontAwesome,
@@ -23,10 +29,19 @@ import {
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
+import type { Category } from "../features/categories/categoriesSlice";
+import {
+  addTransaction,
+  type Transaction,
+} from "../features/transactions/transactionsSlice";
+import type { AppDispatch, RootState } from "../store";
+
+type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
 type SummaryCard = {
   id: string;
-  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
+  icon: IconName;
   title: string;
   amount: string;
   leftLabel: string;
@@ -35,34 +50,27 @@ type SummaryCard = {
   rightValue: string;
 };
 
-type Transaction = {
+type TransactionRowItem = {
   id: string;
-  date: string;
-  weekday: string;
   category: string;
+  icon: IconName;
+  iconColor: string;
   time: string;
   amount: string;
 };
 
 type TransactionSection = {
   sectionKey: string;
-  date: string;
+  dateLabel: string;
   weekday: string;
   totalExpense: number;
-  data: Transaction[];
-};
-
-type AddCategory = {
-  id: string;
-  label: string;
-  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
-  active?: boolean;
+  data: TransactionRowItem[];
 };
 
 type QuickAction = {
   id: string;
   label: string;
-  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
+  icon: IconName;
   iconBg: string;
 };
 
@@ -86,6 +94,7 @@ const keypadDigitMap: Record<string, string> = {
   k8: "8",
   k9: "9",
 };
+
 const maxIntegerDigits = 9;
 
 const summaryCards: SummaryCard[] = [
@@ -119,93 +128,6 @@ const summaryCards: SummaryCard[] = [
     rightLabel: "总负债",
     rightValue: "¥3,520.00",
   },
-];
-
-const transactions: Transaction[] = [
-  {
-    id: "1",
-    date: "2026-02-26",
-    weekday: "星期四",
-    category: "餐饮",
-    time: "13:50",
-    amount: "-¥6,634.00",
-  },
-  {
-    id: "2",
-    date: "2026-02-26",
-    weekday: "星期四",
-    category: "餐饮",
-    time: "13:50",
-    amount: "-¥647.00",
-  },
-  {
-    id: "3",
-    date: "2026-02-26",
-    weekday: "星期四",
-    category: "餐饮",
-    time: "13:50",
-    amount: "-¥85.00",
-  },
-  {
-    id: "4",
-    date: "2026-02-26",
-    weekday: "星期四",
-    category: "餐饮",
-    time: "13:50",
-    amount: "-¥3.00",
-  },
-  {
-    id: "5",
-    date: "2026-02-26",
-    weekday: "星期四",
-    category: "餐饮",
-    time: "21:15",
-    amount: "-¥5.00",
-  },
-  {
-    id: "6",
-    date: "2026-02-27",
-    weekday: "星期五",
-    category: "餐饮",
-    time: "10:37",
-    amount: "-¥5.00",
-  },
-  {
-    id: "7",
-    date: "2026-02-26",
-    weekday: "星期四",
-    category: "餐饮",
-    time: "13:50",
-    amount: "-¥58.00",
-  },
-];
-
-const addCategories: AddCategory[] = [
-  { id: "food", label: "餐饮", icon: "food-drumstick-outline", active: true },
-  { id: "shopping", label: "购物", icon: "cart-outline" },
-  { id: "cloth", label: "服饰", icon: "tshirt-crew-outline" },
-  { id: "daily", label: "日用", icon: "bottle-tonic-outline" },
-  { id: "digital", label: "数码", icon: "cellphone" },
-  { id: "beauty", label: "美妆", icon: "lipstick" },
-  { id: "skin", label: "护肤", icon: "bottle-tonic-plus-outline" },
-  { id: "app", label: "应用软件", icon: "application-outline" },
-  { id: "house", label: "住房", icon: "home-city-outline" },
-  { id: "traffic", label: "交通", icon: "bus" },
-  { id: "game", label: "娱乐", icon: "gamepad-variant-outline" },
-  { id: "medical", label: "医疗", icon: "medical-bag" },
-  { id: "phone", label: "通讯", icon: "phone-outline" },
-  { id: "car", label: "汽车", icon: "car-outline" },
-  { id: "study", label: "学习", icon: "book-open-page-variant-outline" },
-  { id: "office", label: "办公", icon: "printer-outline" },
-  { id: "sport", label: "运动", icon: "badminton" },
-  { id: "social", label: "社交", icon: "account-group-outline" },
-  { id: "favor", label: "人情", icon: "hand-heart-outline" },
-  { id: "baby", label: "育儿", icon: "baby-face-outline" },
-  { id: "pet", label: "宠物", icon: "paw-outline" },
-  { id: "travel", label: "旅行", icon: "bag-suitcase-outline" },
-  { id: "vacation", label: "度假", icon: "palm-tree" },
-  { id: "smoke", label: "烟酒", icon: "glass-cocktail" },
-  { id: "lottery", label: "彩票", icon: "ticket-outline" },
 ];
 
 const quickActions: QuickAction[] = [
@@ -259,15 +181,22 @@ const keypadRows: KeypadKey[][] = [
   ],
 ];
 
+const billTypeOptions: Array<{ id: Transaction["type"]; label: string }> = [
+  { id: "EXPENSE", label: "支出" },
+  { id: "INCOME", label: "收入" },
+  { id: "TRANSFER", label: "转账" },
+];
+
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-const parseAmount = (value: string) => {
-  const amount = Number(value.replace(/[^0-9.-]/g, ""));
-  return Number.isNaN(amount) ? 0 : amount;
-};
+const weekdayFormatter = new Intl.DateTimeFormat("zh-CN", {
+  weekday: "long",
+});
+
+const pad2 = (value: number) => String(value).padStart(2, "0");
 
 const formatInputAmount = (value: string) => {
   if (value === "" || value === "0") {
@@ -367,53 +296,89 @@ const evaluateExpression = (
   return normalized === "-0" ? "0" : normalized;
 };
 
-const formatDateLabel = (date: string) => {
-  const [, month, day] = date.split("-");
-  return `${month}/${day}`;
+const formatTimeLabel = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 };
+
+const formatDateLabel = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return `${pad2(date.getMonth() + 1)}/${pad2(date.getDate())}`;
+};
+
+const formatAmountText = (item: Transaction) => {
+  const amountText = `¥${currencyFormatter.format(Math.abs(item.amount) / 100)}`;
+
+  if (item.type === "EXPENSE") {
+    return `-${amountText}`;
+  }
+
+  if (item.type === "INCOME") {
+    return `+${amountText}`;
+  }
+
+  return amountText;
+};
+
+const createTransactionId = () =>
+  `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 const buildTransactionSections = (
   data: Transaction[],
+  categoriesById: Map<string, Category>,
 ): TransactionSection[] => {
-  const sorted = [...data].sort((a, b) => {
-    const dateOrder = b.date.localeCompare(a.date);
-    if (dateOrder !== 0) {
-      return dateOrder;
-    }
-    return b.time.localeCompare(a.time);
-  });
-
+  const sorted = [...data].sort((a, b) => b.date - a.date);
   const sections = new Map<string, TransactionSection>();
 
   sorted.forEach((item) => {
-    const sectionKey = `${item.date}-${item.weekday}`;
-    const current = sections.get(sectionKey);
-    const parsedAmount = parseAmount(item.amount);
-    const expense = parsedAmount < 0 ? Math.abs(parsedAmount) : 0;
+    const date = new Date(item.date);
+    const dayKey = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+    const current = sections.get(dayKey);
+    const category = categoriesById.get(item.categoryId);
+    const expense = item.type === "EXPENSE" ? item.amount : 0;
+
+    const rowItem: TransactionRowItem = {
+      id: item.id,
+      category: category?.name ?? "未分类",
+      icon: (category?.icon as IconName) ?? "shape-outline",
+      iconColor: category?.color ?? "#E36F58",
+      time: formatTimeLabel(item.date),
+      amount: formatAmountText(item),
+    };
 
     if (!current) {
-      sections.set(sectionKey, {
-        sectionKey,
-        date: item.date,
-        weekday: item.weekday,
+      sections.set(dayKey, {
+        sectionKey: dayKey,
+        dateLabel: formatDateLabel(item.date),
+        weekday: weekdayFormatter.format(date),
         totalExpense: expense,
-        data: [item],
+        data: [rowItem],
       });
       return;
     }
 
     current.totalExpense += expense;
-    current.data.push(item);
+    current.data.push(rowItem);
   });
 
   return [...sections.values()];
 };
 
 export default function LedgerScreen() {
+  const dispatch = useDispatch<AppDispatch>();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+
+  const transactions = useSelector(
+    (state: RootState) => state.transactions.items,
+  );
+  const categories = useSelector((state: RootState) => state.categories.items);
+  const accounts = useSelector((state: RootState) => state.accounts.items);
+
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [billType, setBillType] = useState<Transaction["type"]>("EXPENSE");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [leftInput, setLeftInput] = useState("0");
   const [pendingOperator, setPendingOperator] = useState<MathOperator | null>(
     null,
@@ -423,12 +388,48 @@ export default function LedgerScreen() {
   const [collapsedSections, setCollapsedSections] = useState<
     Record<string, boolean>
   >({});
+
   const cardWidth = width - 30;
   const cardInnerWidth = cardWidth - 32;
-  const transactionSections = useMemo(
-    () => buildTransactionSections(transactions),
-    [transactions],
+
+  const activeAccount = useMemo(
+    () => accounts.find((item) => item.isActive) ?? accounts[0],
+    [accounts],
   );
+
+  const categoryMap = useMemo(
+    () => new Map(categories.map((item) => [item.id, item])),
+    [categories],
+  );
+
+  const selectableCategories = useMemo(() => {
+    const activeCategories = categories.filter((item) => item.isActive);
+
+    if (billType === "TRANSFER") {
+      return activeCategories.sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+
+    return activeCategories
+      .filter((item) => item.type === billType)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [billType, categories]);
+
+  useEffect(() => {
+    if (selectableCategories.length === 0) {
+      setSelectedCategoryId("");
+      return;
+    }
+
+    if (!selectableCategories.some((item) => item.id === selectedCategoryId)) {
+      setSelectedCategoryId(selectableCategories[0].id);
+    }
+  }, [selectableCategories, selectedCategoryId]);
+
+  const transactionSections = useMemo(
+    () => buildTransactionSections(transactions, categoryMap),
+    [transactions, categoryMap],
+  );
+
   const displayedSections = useMemo(
     () =>
       transactionSections.map((section) => ({
@@ -437,31 +438,36 @@ export default function LedgerScreen() {
       })),
     [collapsedSections, transactionSections],
   );
+
   const leftAmountDisplay = useMemo(
     () => formatInputAmount(leftInput),
     [leftInput],
   );
-  const rightAmountDisplay = useMemo(
-    () => {
-      if (rightInput === "") {
-        return "";
-      }
-      if (rightInput === "0") {
-        return "0";
-      }
-      return formatInputAmount(rightInput);
-    },
-    [rightInput],
-  );
+
+  const rightAmountDisplay = useMemo(() => {
+    if (rightInput === "") {
+      return "";
+    }
+    if (rightInput === "0") {
+      return "0";
+    }
+    return formatInputAmount(rightInput);
+  }, [rightInput]);
+
   const keypadPanGesture = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetY([-12, 12])
+        .activeOffsetY([-5, 5])
         .onUpdate(() => {
           "worklet";
         }),
     [],
   );
+
+  const timeLabel = useMemo(() => {
+    const now = new Date();
+    return `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  }, [isAddModalVisible]);
 
   const handleCardScrollEnd = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -476,6 +482,18 @@ export default function LedgerScreen() {
       ...prev,
       [sectionKey]: !prev[sectionKey],
     }));
+  };
+
+  const resetAmountInput = () => {
+    setLeftInput("0");
+    setRightInput("");
+    setPendingOperator(null);
+  };
+
+  const closeAddModal = () => {
+    resetAmountInput();
+    setBillType("EXPENSE");
+    setIsAddModalVisible(false);
   };
 
   const applyOperatorFromKey = (keyId: string) => {
@@ -510,6 +528,63 @@ export default function LedgerScreen() {
     setPendingOperator(primaryOperator);
   };
 
+  const saveTransaction = (closeAfterSave: boolean) => {
+    const selectedCategory =
+      selectableCategories.find((item) => item.id === selectedCategoryId) ??
+      selectableCategories[0];
+
+    if (!selectedCategory) {
+      return;
+    }
+
+    const inputValue =
+      pendingOperator && rightInput !== ""
+        ? evaluateExpression(leftInput, pendingOperator, rightInput)
+        : leftInput;
+
+    const amountValue = Number.parseFloat(inputValue);
+    if (Number.isNaN(amountValue) || amountValue <= 0) {
+      return;
+    }
+
+    const now = Date.now();
+    const amountInCents = Math.round(Math.abs(amountValue) * 100);
+    const primaryAccountId = activeAccount?.id ?? "acc_default_cny";
+    const secondaryAccountId = accounts.find(
+      (item) => item.id !== primaryAccountId,
+    )?.id;
+
+    dispatch(
+      addTransaction({
+        id: createTransactionId(),
+        userId: activeAccount?.userId ?? "demo-user",
+        amount: amountInCents,
+        type: billType,
+        currency: activeAccount?.currency ?? "CNY",
+        categoryId: selectedCategory.id,
+        rootCategoryId: selectedCategory.parentId ?? selectedCategory.id,
+        accountId: primaryAccountId,
+        toAccountId: billType === "TRANSFER" ? secondaryAccountId : undefined,
+        isExcludeFromStats: false,
+        isExcludeFromBudget: false,
+        status: "COMPLETED",
+        refundStatus: "NONE",
+        date: now,
+        createdAt: now,
+        updatedAt: now,
+        note: "",
+        tags: [],
+        images: [],
+      }),
+    );
+
+    resetAmountInput();
+
+    if (closeAfterSave) {
+      setIsAddModalVisible(false);
+    }
+  };
+
   const handleAmountKeyPress = (key: KeypadKey) => {
     if (key.id === "kdel") {
       if (pendingOperator) {
@@ -540,6 +615,11 @@ export default function LedgerScreen() {
       return;
     }
 
+    if (key.id === "ksave") {
+      saveTransaction(false);
+      return;
+    }
+
     if (key.id === "kdone") {
       if (pendingOperator && rightInput !== "") {
         const result = evaluateExpression(
@@ -550,7 +630,10 @@ export default function LedgerScreen() {
         setLeftInput(result);
         setRightInput("");
         setPendingOperator(null);
+        return;
       }
+
+      saveTransaction(true);
       return;
     }
 
@@ -571,9 +654,7 @@ export default function LedgerScreen() {
 
   const handleDeleteLongPress = () => {
     deleteLongPressRef.current = true;
-    setLeftInput("0");
-    setRightInput("");
-    setPendingOperator(null);
+    resetAmountInput();
   };
 
   const getKeyLabel = (key: KeypadKey) => {
@@ -602,6 +683,7 @@ export default function LedgerScreen() {
           />
         </Pressable>
       </View>
+
       <SectionList
         sections={displayedSections}
         showsVerticalScrollIndicator={false}
@@ -663,7 +745,7 @@ export default function LedgerScreen() {
                             <Fontisto
                               name="arrow-swap"
                               size={13}
-                              color={"#F6BB00"}
+                              color="#F6BB00"
                             />
                           </Pressable>
                         )}
@@ -713,14 +795,14 @@ export default function LedgerScreen() {
           return (
             <View style={styles.transactionHeaderRow}>
               <Text style={styles.transactionDateText}>
-                {formatDateLabel(section.date)} {section.weekday}
+                {section.dateLabel} {section.weekday}
               </Text>
               <Pressable
                 style={styles.transactionTotalWrap}
                 onPress={() => toggleSection(section.sectionKey)}
               >
                 <Text style={styles.transactionTotalText}>
-                  支出: ¥{currencyFormatter.format(section.totalExpense)}
+                  支出: ¥{currencyFormatter.format(section.totalExpense / 100)}
                 </Text>
                 <Entypo
                   name={isCollapsed ? "chevron-right" : "chevron-down"}
@@ -745,9 +827,14 @@ export default function LedgerScreen() {
               ]}
             >
               <View style={styles.transactionLeft}>
-                <View style={styles.transactionIconBg}>
+                <View
+                  style={[
+                    styles.transactionIconBg,
+                    { backgroundColor: item.iconColor },
+                  ]}
+                >
                   <MaterialCommunityIcons
-                    name="food-drumstick-outline"
+                    name={item.icon}
                     size={24}
                     color="#FFFFFF"
                   />
@@ -779,37 +866,47 @@ export default function LedgerScreen() {
         presentationStyle="pageSheet"
         animationType="slide"
         allowSwipeDismissal
-        onRequestClose={() => {
-          setLeftInput("0");
-          setRightInput("");
-          setPendingOperator(null);
-          setIsAddModalVisible(false);
-        }}
+        onRequestClose={closeAddModal}
       >
         <View style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
           <View style={styles.modalHeaderRow}>
-            <Pressable onPress={() => setIsAddModalVisible(false)}>
+            <Pressable onPress={closeAddModal}>
               <Text style={styles.modalCancelText}>取消</Text>
             </Pressable>
 
             <View style={styles.billTypeSwitch}>
-              <Pressable style={[styles.billTypeBtn, styles.billTypeBtnActive]}>
-                <Text style={[styles.billTypeText, styles.billTypeTextActive]}>
-                  支出
-                </Text>
-              </Pressable>
-              <View style={styles.billTypeDivider} />
-              <Pressable style={styles.billTypeBtn}>
-                <Text style={styles.billTypeText}>收入</Text>
-              </Pressable>
-              <View style={styles.billTypeDivider} />
-              <Pressable style={styles.billTypeBtn}>
-                <Text style={styles.billTypeText}>转账</Text>
-              </Pressable>
+              {billTypeOptions.map((item, index) => {
+                const isActive = billType === item.id;
+                return (
+                  <View key={item.id} style={styles.billTypeOptionWrap}>
+                    <Pressable
+                      style={[
+                        styles.billTypeBtn,
+                        isActive && styles.billTypeBtnActive,
+                      ]}
+                      onPress={() => setBillType(item.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.billTypeText,
+                          isActive && styles.billTypeTextActive,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                    {index < billTypeOptions.length - 1 && (
+                      <View style={styles.billTypeDivider} />
+                    )}
+                  </View>
+                );
+              })}
             </View>
 
             <Pressable>
-              <Text style={styles.modalBookText}>默认账本</Text>
+              <Text style={styles.modalBookText}>
+                {activeAccount?.name ?? "默认账本"}
+              </Text>
             </Pressable>
           </View>
 
@@ -820,23 +917,36 @@ export default function LedgerScreen() {
               contentContainerStyle={styles.modalScrollContent}
             >
               <View style={styles.categoryGrid}>
-                {addCategories.map((category) => (
-                  <Pressable key={category.id} style={styles.categoryItem}>
-                    <View
-                      style={[
-                        styles.categoryIconCircle,
-                        category.active && styles.categoryIconCircleActive,
-                      ]}
+                {selectableCategories.map((category) => {
+                  const isSelected = selectedCategoryId === category.id;
+                  return (
+                    <Pressable
+                      key={category.id}
+                      style={styles.categoryItem}
+                      onPress={() => setSelectedCategoryId(category.id)}
                     >
-                      <MaterialCommunityIcons
-                        name={category.icon}
-                        size={25}
-                        color={category.active ? "#FFFFFF" : "#5F626A"}
-                      />
-                    </View>
-                    <Text style={styles.categoryLabel}>{category.label}</Text>
-                  </Pressable>
-                ))}
+                      <View
+                        style={[
+                          styles.categoryIconCircle,
+                          isSelected && styles.categoryIconCircleActive,
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name={(category.icon as IconName) ?? "shape-outline"}
+                          size={25}
+                          color={isSelected ? "#FFFFFF" : "#5F626A"}
+                        />
+                      </View>
+                      <Text style={styles.categoryLabel}>{category.name}</Text>
+                    </Pressable>
+                  );
+                })}
+
+                {selectableCategories.length === 0 && (
+                  <Text style={styles.emptyCategoryText}>
+                    当前类型暂无可选分类
+                  </Text>
+                )}
               </View>
             </ScrollView>
 
@@ -885,7 +995,7 @@ export default function LedgerScreen() {
                 <View style={styles.amountFooterRow}>
                   <View style={styles.timeBadge}>
                     <Ionicons name="time-outline" size={19} color="#5F6878" />
-                    <Text style={styles.timeBadgeText}>11:28</Text>
+                    <Text style={styles.timeBadgeText}>{timeLabel}</Text>
                   </View>
 
                   <Text style={styles.notePlaceholder}>点击填写备注</Text>
@@ -943,6 +1053,8 @@ export default function LedgerScreen() {
                           }}
                           style={({ pressed }) => [
                             styles.keypadKey,
+                            key.variant === "secondary" &&
+                              styles.keypadKeySecondary,
                             key.variant === "primary" &&
                               styles.keypadKeyPrimary,
                             pressed && styles.keypadKeyPressed,
@@ -1151,7 +1263,6 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 28,
-    backgroundColor: "#E36F58",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1212,6 +1323,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  billTypeOptionWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: "100%",
+  },
   billTypeBtn: {
     minWidth: 38,
     height: "100%",
@@ -1238,6 +1354,7 @@ const styles = StyleSheet.create({
     width: 1,
     height: 22,
     backgroundColor: "#BEBFC6",
+    marginHorizontal: 2,
   },
   modalBookText: {
     color: "#2787F8",
@@ -1287,7 +1404,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
   },
-
+  emptyCategoryText: {
+    color: "#8A8C92",
+    fontSize: 14,
+    paddingTop: 12,
+  },
   quickActionRow: {
     paddingVertical: 5,
     paddingRight: 10,

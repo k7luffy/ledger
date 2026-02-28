@@ -3,10 +3,13 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { type ComponentProps, type ComponentType } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
 import AssetsScreen from "./screens/AssetsScreen";
 import LedgerScreen from "./screens/LedgerScreen";
 import SavingsScreen from "./screens/SavingsScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
+import { persistor, store } from "./store";
 
 const Tab = createBottomTabNavigator();
 
@@ -52,35 +55,39 @@ const tabs: TabConfig[] = [
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: {
-              backgroundColor: "#F2F2F2",
-              borderTopWidth: 0, // hide top hairline
-            },
-          }}
-        >
-          {tabs.map((tab) => (
-            <Tab.Screen
-              key={tab.name}
-              name={tab.name}
-              component={tab.component}
-              options={{
-                title: tab.title,
-                tabBarIcon: ({ color, size, focused }) => (
-                  <MaterialCommunityIcons
-                    name={focused ? tab.activeIcon : tab.inactiveIcon}
-                    size={size}
-                    color={color}
-                  />
-                ),
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <NavigationContainer>
+            <Tab.Navigator
+              screenOptions={{
+                headerShown: false,
+                tabBarStyle: {
+                  backgroundColor: "#F2F2F2",
+                  borderTopWidth: 0, // hide top hairline
+                },
               }}
-            />
-          ))}
-        </Tab.Navigator>
-      </NavigationContainer>
+            >
+              {tabs.map((tab) => (
+                <Tab.Screen
+                  key={tab.name}
+                  name={tab.name}
+                  component={tab.component}
+                  options={{
+                    title: tab.title,
+                    tabBarIcon: ({ color, size, focused }) => (
+                      <MaterialCommunityIcons
+                        name={focused ? tab.activeIcon : tab.inactiveIcon}
+                        size={size}
+                        color={color}
+                      />
+                    ),
+                  }}
+                />
+              ))}
+            </Tab.Navigator>
+          </NavigationContainer>
+        </PersistGate>
+      </Provider>
     </GestureHandlerRootView>
   );
 }
